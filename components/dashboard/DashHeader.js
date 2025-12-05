@@ -7,6 +7,7 @@ import {
   findAvailableUsernameTag,
   updateUsername,
 } from "@/lib/data";
+
 import { X } from "lucide-react";
 
 export function lighten(hex, amount = 30) {
@@ -21,18 +22,26 @@ export function lighten(hex, amount = 30) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+export const hexToRgba = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 function DashHeaderInner(
   {
     profileUser,
-    defaultHex = "#000000",
-    alpha = 0.65,
+    alpha,
     editColOn = false,
     editTitleOn = false,
     openColor,
     heightShort = false,
     className,
-    hexColor,
-    onColorChange,
+    dashHex,
+    setDashHex,
+    backHex,
+    setBackHex,
   },
   ref
 ) {
@@ -46,12 +55,30 @@ function DashHeaderInner(
   );
 
   const [tempTitleText, setTempTitleText] = useState(
-    profileUser ? `${profileUser.usernameTitle}` : ""
+    profileUser && !heightShort ? `${profileUser.usernameTitle}` : ""
   );
 
   const [suggestedTag, setSuggestedTag] = useState("");
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // // B. DEBOUNCED COLOR SAVE
+  // useEffect(() => {
+  //   if (headerColor === initialHex) return;
+
+  //   const timer = setTimeout(async () => {
+  //     if (profileUser) {
+  //       try {
+  //         await changeHexGlobal(profileUser.uid, headerColor);
+  //         router.refresh();
+  //       } catch (error) {
+  //         console.error("Failed to auto-save color:", error);
+  //       }
+  //     }
+  //   }, 500);
+
+  //   return () => clearTimeout(timer);
+  // }, [headerColor, initialHex, profileUser, router]);
 
   // 2. SYNC EFFECT: Ensure browser Back/Forward buttons still update the UI
   useEffect(() => {
@@ -112,13 +139,6 @@ function DashHeaderInner(
     }
   }, [tempTitleText, profileUser]);
 
-  const hexToRgba = (hex, alpha) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
   const handleSaveUsername = async () => {
     if (isCheckingUser) return alert("Still checking availability...");
     if (!suggestedTag) return alert("Invalid or unavailable username.");
@@ -139,7 +159,6 @@ function DashHeaderInner(
   };
 
   const combinedClassName = `backdrop-blur-md  ${className || ""}`;
-  const activeHex = hexColor || defaultHex;
 
   return (
     <>
@@ -148,36 +167,19 @@ function DashHeaderInner(
         role="banner"
         className={combinedClassName}
         style={{
-          backgroundColor: hexToRgba(activeHex, alpha),
+          backgroundColor: hexToRgba(dashHex, alpha),
         }}
       >
-        {(editColOn || openColor) && (
-          <div className="flex">
-            <input
-              type="color"
-              className="mr-3 h-9 w-9  block cursor-pointer absolute right-3 sm:right-6 top-1/2 translate-y-[-50%] rounded-md border border-white/50 bg-transparent p-1 shadow"
-              value={activeHex}
-              onChange={(e) => onColorChange(e.target.value)}
-            />
-
-            <input
-              type="color"
-              className="mr-3 h-9 w-9  block cursor-pointer absolute right-3 sm:right-6 top-1/2 translate-x-[-130%] translate-y-[-50%] rounded-md border border-white/50 bg-transparent p-1 shadow"
-              value={activeHex}
-              onChange={(e) => onColorChange(e.target.value)}
-            />
-          </div>
-        )}
         <div className="mx-auto max-w-8xl px-0">
           <div
-            className={`flex items-center justify-between gap-4 py-2 ${
+            className={`flex items-center justify-between gap-4 ${
               heightShort ? "min-h-[20px]" : "min-h-[80px] sm:min-h-[100px]"
             }`}
           >
             <div className="flex gap-1 min-w-0 flex-1 items-center">
               <h1
                 className="text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow pr-4 pl-6 sm:pl-8 break-words leading-tight"
-                style={{ color: lighten(activeHex, 230) }}
+                style={{ color: lighten(dashHex, 230) }}
               >
                 {tempTitleText}
               </h1>
@@ -216,6 +218,23 @@ function DashHeaderInner(
                 </div>
               )}
             </div>
+
+            {(editColOn || openColor) && (
+              <div className=" flex shrink-0  py-2 px-7 gap-2">
+                <input
+                  type="color"
+                  className=" h-8 w-9   cursor-pointer  rounded-sm  border border-white/50 bg-white/10  px-[2px] shadow"
+                  value={backHex}
+                  onChange={(e) => setBackHex && setBackHex(e.target.value)}
+                />
+                <input
+                  type="color"
+                  className="h-8 w-9  cursor-pointer  rounded-sm border border-white/50 bg-white/10 px-[2px] shadow"
+                  value={dashHex}
+                  onChange={(e) => setDashHex && setDashHex(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -11,14 +11,15 @@ import CreatePageModal from "@/components/dashboard/CreatePageModal";
 import EditPageModal from "@/components/dashboard/EditPageModal";
 // 1. Next.js Navigation Hooks
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import Image from "next/image";
+import { hexToRgba } from "@/components/dashboard/DashHeader";
+import { useTheme } from "@/context/ThemeContext";
 
 import {
   createPage,
   deletePage,
   getPages,
   updatePage,
-  changeHexGlobal,
+  updateUserColours,
 } from "@/lib/data";
 
 const PageSkeleton = () => (
@@ -28,18 +29,17 @@ const PageSkeleton = () => (
 export default function DashboardClient({
   profileUser, // Data passed from server
   initialPages, // Data passed from server
-  initialHex, // Data passed from server
-  initialInfoText,
 }) {
   const { user: currentUser, logout, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { updateTheme } = useTheme();
 
   // 2. Initialize URL hooks
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
   const [pages, setPages] = useState(initialPages);
-  const [headerColor, setHeaderColor] = useState(initialHex);
+
   const [loading, setLoading] = useState(false);
 
   // UI State
@@ -52,6 +52,55 @@ export default function DashboardClient({
 
   const isOwner =
     currentUser && profileUser && currentUser.uid === profileUser.uid;
+
+  const [dashHex, setDashHex] = useState(
+    profileUser?.dashboard?.dashHex || "#000000"
+  );
+  const [backHex, setBackHex] = useState(
+    profileUser?.dashboard?.backHex || "#ffffff"
+  );
+
+  // Handle Dash Hex Changes
+  useEffect(() => {
+    // A. Always sync to Global Context immediately so PageClientView sees it
+    if (profileUser?.uid) {
+      updateTheme(profileUser.uid, dashHex, backHex);
+    }
+
+    // B. Stop if the state matches the Server Data (Prevent Back-Button Overwrite)
+    if (dashHex === profileUser?.dashboard?.dashHex) return;
+
+    // C. Debounce the Database Save
+    const handler = setTimeout(async () => {
+      if (profileUser?.uid) {
+        await updateUserColours(profileUser.uid, "dashboard.dashHex", dashHex);
+        router.refresh(); // Refresh server cache
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [dashHex, profileUser, router]);
+
+  // Handle Back Hex Changes
+  useEffect(() => {
+    // A. Sync Context
+    if (profileUser?.uid) {
+      updateTheme(profileUser.uid, dashHex, backHex);
+    }
+
+    // B. Safety Check
+    if (backHex === profileUser?.dashboard?.backHex) return;
+
+    // C. Debounce Save
+    const handler = setTimeout(async () => {
+      if (profileUser?.uid) {
+        await updateUserColours(profileUser.uid, "dashboard.backHex", backHex);
+        router.refresh();
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [backHex, profileUser, router]); // Remove dashHex from
 
   // 4. Sync State with URL (Handles Back/Forward buttons)
   useEffect(() => {
@@ -72,24 +121,6 @@ export default function DashboardClient({
       fetchPrivatePages();
     }
   }, [isOwner, profileUser?.uid]);
-
-  // B. DEBOUNCED COLOR SAVE
-  useEffect(() => {
-    if (headerColor === initialHex) return;
-
-    const timer = setTimeout(async () => {
-      if (profileUser) {
-        try {
-          await changeHexGlobal(profileUser.uid, headerColor);
-          router.refresh();
-        } catch (error) {
-          console.error("Failed to auto-save color:", error);
-        }
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [headerColor, initialHex, profileUser, router]);
 
   // ------------------------------------------------------------------
   // ACTION HANDLERS
@@ -204,102 +235,141 @@ export default function DashboardClient({
 
   return (
     <>
-      {/* FIXED HEADER */}
-      <div className=" fixed top-0 left-0 right-0 z-20 pt-2 px-0">
-        <DashHeader
-          profileUser={profileUser}
-          defaultHex="#000000"
-          alpha={1}
-          uid={profileUser.uid}
-          editTitleOn={editOn} // Passes true if param is 'true' OR 'title'
-          hexColor={headerColor}
-        />
-      </div>
+      <div
+        className="min-h-[100vh]"
+        style={{
+          backgroundColor: hexToRgba(backHex, 1),
+        }}
+      >
+        {/* FIXED HEADER */}
+        <div className=" fixed top-0 left-0 right-0 z-20 pt-2 px-0">
+          <DashHeader
+            profileUser={profileUser}
+            alpha={1}
+            editTitleOn={editOn} // Passes true if param is 'true' OR 'title'
+            dashHex={dashHex}
+          />
+        </div>
 
-      {/* CONTENT AREA */}
-      <div className="pt-6">
-        <div className="min-h-[100px] sm:min-h-[120px]"></div>
+        {/* CONTENT AREA */}
+        <div className="pt-6">
+          <div className="min-h-[100px] sm:min-h-[120px]"></div>
 
-        {/* Bio / Info Editor */}
-        <div className="max-w-8xl mx-auto">
-          <div className="flex">
-            <div className="w-full ml-7 mr-9">
-              <DashboardInfoEditor
-                uid={profileUser.uid}
-                canEdit={isOwner}
-                editOn={editOn}
-                initialData={initialInfoText}
-              />
+          {/* Bio / Info Editor */}
+          <div className="max-w-8xl mx-auto">
+            <div className="flex">
+              <div className="w-full ml-7 mr-9">
+                <DashboardInfoEditor
+                  uid={profileUser.uid}
+                  canEdit={isOwner}
+                  editOn={editOn}
+                  initialData={profileUser.dashboard?.infoText || "Add info..."}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* STICKY HEADER 2 */}
-      <div className="sticky  top-[-2px] left-0 right-0 z-10 pt-3 px-0">
-        <DashHeader
-          title={""}
-          defaultHex="#000000"
-          alpha={1}
-          uid={profileUser.uid}
-          editColOn={editOn}
-          hexColor={headerColor}
-          heightShort={true}
-          onColorChange={handleHeaderColorChange}
-        />
-      </div>
-
-      {/* PAGES GRID */}
-      <div className="p-3 md:p-6">
-        {loading || pages.length === 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-            {pages.length === 0 && !loading && !isOwner ? (
-              <div className="text-center py-16 w-full col-span-full">
-                <h3 className="text-xl font-semibold text-neumorphic">
-                  No public pages.
-                </h3>
-              </div>
-            ) : (
-              [1, 2, 3, 4, 5, 6, 7, 8].map((i) => <PageSkeleton key={i} />)
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
-            {pages.map((page) => (
-              <PageCard
-                key={page.id}
-                page={page}
-                isOwner={isOwner}
-                editModeOn={editOn}
-                usernameTag={profileUser.usernameTag}
-                onDelete={() => handleDeletePage(page.id)}
-                onEdit={() => setEditingPage(page)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      {/* Scroll Spacer */}
-      <div className="p-6 min-h-[150vh]"></div>
-
-      {/* BUTTONS & MODALS */}
-      {authLoading ? (
-        <div className="fixed bottom-6 right-8 z-[100] h-[44px] flex items-center">
-          <div className="flex items-center gap-4 animate-pulse">
-            <button
-              onClick={() => router.push("/login")}
-              className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]"
-            >
-              <UserIcon className="w-5 h-5 " />
-              <span className="text-sm">...</span>
-            </button>
-          </div>
+        {/* STICKY HEADER 2 */}
+        <div className="sticky  top-[-2px] left-0 right-0 z-10 pt-3 px-0">
+          <DashHeader
+            title={""}
+            alpha={1}
+            profileUser={profileUser}
+            editColOn={editOn}
+            heightShort={true}
+            dashHex={dashHex}
+            setDashHex={setDashHex}
+            backHex={backHex}
+            setBackHex={setBackHex}
+          />
         </div>
-      ) : isOwner ? (
-        <>
-          {/* Mobile buttons view */}
-          <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
-            {editOn && (
+
+        {/* PAGES GRID */}
+        <div className="p-3 md:p-6">
+          {loading || pages.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+              {pages.length === 0 && !loading && !isOwner ? (
+                <div className="text-center py-16 w-full col-span-full">
+                  <h3 className="text-xl font-semibold text-neumorphic">
+                    No public pages.
+                  </h3>
+                </div>
+              ) : (
+                [1, 2, 3, 4, 5, 6, 7, 8].map((i) => <PageSkeleton key={i} />)
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
+              {pages.map((page) => (
+                <PageCard
+                  key={page.id}
+                  page={page}
+                  isOwner={isOwner}
+                  editModeOn={editOn}
+                  usernameTag={profileUser.usernameTag}
+                  onDelete={() => handleDeletePage(page.id)}
+                  onEdit={() => setEditingPage(page)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Scroll Spacer */}
+        <div className="p-6 min-h-[150vh]"></div>
+
+        {/* BUTTONS & MODALS */}
+        {authLoading ? (
+          <div className="fixed bottom-6 right-8 z-[100] h-[44px] flex items-center">
+            <div className="flex items-center gap-4 animate-pulse">
+              <button
+                onClick={() => router.push("/login")}
+                className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]"
+              >
+                <UserIcon className="w-5 h-5 " />
+                <span className="text-sm">...</span>
+              </button>
+            </div>
+          </div>
+        ) : isOwner ? (
+          <>
+            {/* Mobile buttons view */}
+            <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
+              {editOn && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Page
+                </button>
+              )}
+
+              {/* MAIN EDIT BUTTON */}
+              <button
+                onClick={toggleEditMode}
+                className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
+                  editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
+                }`}
+              >
+                <div className={editOn ? "text-white" : ""}>
+                  Edit: {editOn ? "on" : "off"}
+                </div>
+              </button>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
+                  title="Log Out"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop buttons view */}
+            <div className="hidden md:flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
@@ -307,107 +377,74 @@ export default function DashboardClient({
                 <Plus className="w-5 h-5" />
                 New Page
               </button>
-            )}
 
-            {/* MAIN EDIT BUTTON */}
-            <button
-              onClick={toggleEditMode}
-              className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
-                editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
-              }`}
-            >
-              <div className={editOn ? "text-white" : ""}>
-                Edit: {editOn ? "on" : "off"}
+              {/* MAIN EDIT BUTTON */}
+              <button
+                onClick={toggleEditMode}
+                className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
+                  editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
+                }`}
+              >
+                <div className={editOn ? "text-white" : ""}>
+                  Edit: {editOn ? "on" : "off"}
+                </div>
+              </button>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]">
+                  <UserIcon className="w-5 h-5" />
+                  <span className="text-sm">{currentUser?.email}</span>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
+                  title="Log Out"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
-            </button>
-
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
             <div className="flex items-center gap-4">
               <button
-                onClick={handleLogout}
-                className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                title="Log Out"
+                onClick={() => router.push("/welcome")}
+                className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
               >
-                <LogOut className="w-5 h-5" />
+                <Plus className="w-5 h-5" />
+                <span className="text-sm">Create your collection</span>
               </button>
-            </div>
-          </div>
 
-          {/* Desktop buttons view */}
-          <div className="hidden md:flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-            >
-              <Plus className="w-5 h-5" />
-              New Page
-            </button>
-
-            {/* MAIN EDIT BUTTON */}
-            <button
-              onClick={toggleEditMode}
-              className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
-                editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
-              }`}
-            >
-              <div className={editOn ? "text-white" : ""}>
-                Edit: {editOn ? "on" : "off"}
-              </div>
-            </button>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]">
+              <button
+                onClick={() => router.push("/login")}
+                className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
+              >
                 <UserIcon className="w-5 h-5" />
-                <span className="text-sm">{currentUser?.email}</span>
-              </div>
-
-              <button
-                onClick={handleLogout}
-                className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                title="Log Out"
-              >
-                <LogOut className="w-5 h-5" />
+                <span className="text-sm">Login</span>
               </button>
             </div>
           </div>
-        </>
-      ) : (
-        <div className="flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/welcome")}
-              className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="text-sm">Create your collection</span>
-            </button>
+        )}
 
-            <button
-              onClick={() => router.push("/login")}
-              className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
-            >
-              <UserIcon className="w-5 h-5" />
-              <span className="text-sm">Login</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* MODALS */}
-      {isOwner && (
-        <>
-          <CreatePageModal
-            isOpen={showCreateModal}
-            onClose={() => setShowCreateModal(false)}
-            onSubmit={handleCreatePage}
-          />
-          <EditPageModal
-            isOpen={!!editingPage}
-            page={editingPage}
-            onClose={() => setEditingPage(null)}
-            onSubmit={handleEditPage}
-          />
-        </>
-      )}
+        {/* MODALS */}
+        {isOwner && (
+          <>
+            <CreatePageModal
+              isOpen={showCreateModal}
+              onClose={() => setShowCreateModal(false)}
+              onSubmit={handleCreatePage}
+            />
+            <EditPageModal
+              isOpen={!!editingPage}
+              page={editingPage}
+              onClose={() => setEditingPage(null)}
+              onSubmit={handleEditPage}
+            />
+          </>
+        )}
+      </div>
     </>
   );
 }

@@ -19,6 +19,9 @@ import PageInfoEditor from "@/components/page/PageInfoEditor";
 import PhotoShowModal from "@/components/page/PhotoShowModal";
 
 import { lighten } from "@/components/dashboard/DashHeader";
+import { hexToRgba } from "@/components/dashboard/DashHeader";
+
+import { useTheme } from "@/context/ThemeContext";
 
 // 1. Define Skeletons within the Client Component (Crucial Fix)
 const PostSkeleton = () => (
@@ -36,11 +39,10 @@ export default function PageViewClient({
   initialInfoTexts, // info text (both for now)
   params, // Server Data
 }) {
-  console.log(initialInfoTexts.infoText1);
-  console.log(initialInfoTexts.infoText2);
   const { usernameTag, pageSlug } = params;
   const { user: currentUser, logout } = useAuth();
   const router = useRouter();
+  const { themeState } = useTheme();
 
   // 1. Initialize State with Server Props
   const [page, setPage] = useState(initialPage);
@@ -61,6 +63,20 @@ export default function PageViewClient({
   // ------------------------------------------------------------------
   // ACTION HANDLERS
   // ------------------------------------------------------------------
+
+  // Does the context match the user we are currently looking at?
+  const useLiveTheme = themeState.uid === profileUser?.uid;
+
+  // Use Context if available, otherwise use Server Prop
+  const activeDashHex =
+    useLiveTheme && themeState.dashHex
+      ? themeState.dashHex
+      : profileUser?.dashboard?.dashHex || "#ffffff";
+
+  const activeBackHex =
+    useLiveTheme && themeState.backHex
+      ? themeState.backHex
+      : profileUser?.dashboard?.backHex || "#ffffff";
 
   const refreshPosts = useCallback(async () => {
     if (!page?.id) return;
@@ -147,17 +163,21 @@ export default function PageViewClient({
 
   // Since the Server Component already handled the 404/User not found cases,
   // we can rely on initialPage existing here. If it was null, the Server would have rendered the 404.
-  console.log(profileUser?.dashboard?.dashHex);
-  const dashHexVal = profileUser?.dashboard?.dashHex;
+
   return (
-    <div className="p-3 md:px-6 pt-0 pb-0  min-h-screen bg-white/60">
+    <div
+      className="p-3 md:px-6 pt-0 pb-0  min-h-screen"
+      style={{
+        backgroundColor: hexToRgba(activeBackHex, 0.5),
+      }}
+    >
       <div className="sticky top-0 left-0 right-0 z-10 pt-[0px] px-0 bg-gray-100">
         <div className="">
           <div
             className="flex items-center  justify-center md:justify-start text-2xl font-bold h-[47px] pt-4 pb-3  text-white px-9 "
             style={{
-              backgroundColor: dashHexVal || "#ffffff",
-              color: lighten(dashHexVal, 240) || "#000000",
+              backgroundColor: activeDashHex || "#ffffff",
+              color: lighten(activeDashHex, 240) || "#000000",
             }}
           >
             {page ? page.title : <TitleSkeleton />}
@@ -165,7 +185,12 @@ export default function PageViewClient({
         </div>
       </div>
 
-      <div className="bg-[#faebd9] min-h-screen px-4 md:px-5 pt-4 pb-0  shadow-slate-800">
+      <div
+        className=" min-h-screen px-4 md:px-5 pt-4 pb-0  shadow-slate-800"
+        style={{
+          backgroundColor: hexToRgba(activeBackHex, 1),
+        }}
+      >
         <div className="max-w-7xl mx-auto">
           {/* HEADER SECTION - Rendered with Server Data immediately */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">

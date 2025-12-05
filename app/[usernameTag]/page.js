@@ -35,15 +35,9 @@ export default async function Page({ params }) {
     }
 
     // Fetch dashboard data in parallel
-    const [pages, hex, dashboard] = await Promise.all([
-      getPages(profileUser.uid, false),
-      fetchHex(profileUser.uid),
-      fetchUserDashboard(profileUser.uid),
-    ]);
+    const [pages] = await Promise.all([getPages(profileUser.uid, false)]);
 
     initialPages = pages || [];
-    initialHex = hex || "#000000";
-    initialDashboardData = dashboard || { infoText: "" };
   } catch (err) {
     console.error("SERVER FETCH FAILED (username page):", err);
     error = "Unable to load dashboard data at this moment.";
@@ -61,15 +55,8 @@ export default async function Page({ params }) {
     );
   }
 
-  const initialInfoText = initialDashboardData?.infoText || "";
-
   // Pass everything to the client component
   return (
-    <DashboardClient
-      profileUser={profileUser}
-      initialPages={initialPages}
-      initialHex={initialHex}
-      initialInfoText={initialInfoText}
-    />
+    <DashboardClient profileUser={profileUser} initialPages={initialPages} />
   );
 }
