@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #faebd9;
+  overscroll-behavior-y: none; /* Disables vertical scroll-chaining and rubber banding */
+}
+
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+/* Neumorphic Text Styles */
+.text-neumorphic {
+  color: #8a8a8a;
+  text-shadow: 1px 1px 2px #ffffff, -1px -1px 2px #bebebe;
+}
+
+/* Neumorphic Button Base Styles */
+.btn-neumorphic {
+  background: #fffef8;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+/* React Quill Rich Text Editor Styles */
+.ql-snow {
+  border: none;
+  background: #e0e0e0;
+  color: #8a8a8a;
+}
+.ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #bebebe !important;
+  background: #e0e0e0;
+}
+.ql-container {
+  border: none !important;
+  font-size: 14px;
+  min-height: 120px;
+}
+.ql-editor {
+  color: #8a8a8a;
+  padding: 16px;
+}
+.ql-editor.ql-blank::before {
+  color: #8a8a8a;
+  font-style: normal;
+  opacity: 0.7;
+}
+.ql-toolbar .ql-stroke {
+  stroke: #8a8a8a;
+}
+.ql-toolbar .ql-fill {
+  fill: #8a8a8a;
+}
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button:focus .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+  stroke: #333; /* Darker color on hover/active */
+}

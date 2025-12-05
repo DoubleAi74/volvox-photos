@@ -1,0 +1,9 @@
+
+
+- Set a potential fix for the createPostModal persistent randomised
+image spec. Use the lotusThumb parameter to test if the user is on the meditations page
+and if they are: if also no thumbnail is set in the create post modal, then a random thumbnail spec will be saved as 
+in the case with the meditation timer logging method.
+
+- Check that this works by creating a post using the create post modal, not setting a thumbnail and seeing if the random spec is persistently 
+saved. Also chack that this does not happed on other pages. 
