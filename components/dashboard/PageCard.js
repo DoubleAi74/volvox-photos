@@ -23,46 +23,16 @@ export default function PageCard({
         {/* ... (The inner content of the link is unchanged) ... */}
         <div className="p-2 rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft transition-all duration-300  h-full mb-[-10px] cursor-pointer">
           {page.thumbnail ? (
-            // <div className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative">
-            //   <Image
-            //     src={page.thumbnail}
-            //     alt={page.title}
-            //     fill
-            //     sizes="100vh"
-            //     className="object-none"
-            //   />
-            // </div>
             <div className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative">
               <Image
                 src={page.thumbnail}
                 alt={page.title}
                 fill
+                objectFit="cover"
+                unoptimized
                 sizes="100vh"
                 className="object-none"
-                unoptimized // <-- you can turn this on/off easily
-                onLoad={() => {
-                  console.log("Image loaded successfully:", page.thumbnail);
-                  setImgLoaded(true);
-                }}
-                onError={(e) => {
-                  console.error("Image FAILED to load:", page.thumbnail, e);
-                  setImgError(`Failed to load: ${page.thumbnail}`);
-                }}
               />
-
-              {/* VISUAL DEBUG OVERLAY */}
-              {!imgLoaded && (
-                <div className="absolute inset-0 bg-red-200 bg-opacity-70 p-2 text-xs text-red-800">
-                  Loading...
-                </div>
-              )}
-
-              {imgError && (
-                <div className="absolute inset-0 bg-black/70 text-white text-xs p-2 overflow-auto">
-                  <p>❌ Image Error</p>
-                  <p>{imgError}</p>
-                </div>
-              )}
             </div>
           ) : (
             <div className="w-full aspect-[4/3] shadow-md mb-1 rounded-sm bg-neumorphic-bg flex items-center justify-center">

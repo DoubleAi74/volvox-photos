@@ -54,6 +54,8 @@ export default function PostCard({
               src={post.thumbnail}
               alt={post.title}
               fill
+              objectFit="cover"
+              unoptimized
               sizes="100vh"
               className="object-none"
             />
