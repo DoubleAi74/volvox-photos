@@ -4,8 +4,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        // USE THE EXACT HOSTNAME FROM YOUR ERROR HERE:
-        hostname: "pub-1d955c6bf7dc4afbae713f5a9993f51d.r2.dev",
+        hostname: "files.volvox.pics",
         port: "",
         pathname: "/**",
       },
