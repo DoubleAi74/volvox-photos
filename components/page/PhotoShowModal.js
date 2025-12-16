@@ -64,7 +64,7 @@ export default function PhotoShowModal({
   return (
     <dialog
       ref={dialogRef}
-      className="p-0 rounded-lg backdrop:bg-black/80 backdrop-blur-sm shadow-2xl overflow-hidden bg-transparent"
+      className="p-0 rounded-lg shadow-2xl overflow-hidden bg-transparent"
     >
       {post && (
         <div className="relative flex flex-col bg-neutral-900 border border-neutral-800 text-neutral-100 max-w-[97vw] sm:max-w-3xl w-full shadow-2xl max-h-[90vh]">
@@ -99,7 +99,7 @@ export default function PhotoShowModal({
                   className="absolute group flex justify-start items-end w-[80px] h-[100px] left-0 bottom-0 z-20 p-2 rounded-tr-md hover:bg-black/5 transition-colors duration-200"
                   aria-label="Previous"
                 >
-                  <div className="flex items-center justify-center w-8 h-8 bg-black/20 group-hover:bg-black/60 transition-colors duration-200 rounded-md text-white/60 group-hover:text-white/90 backdrop-blur-sm">
+                  <div className="flex items-center justify-center w-8 h-8 bg-black/20 group-hover:bg-black/60 transition-colors duration-200 rounded-md text-white/60 group-hover:text-white/90">
                     <ChevronLeft className="w-5 h-5" />
                   </div>
                 </button>
@@ -114,15 +114,15 @@ export default function PhotoShowModal({
                   className="absolute group flex justify-end items-end w-[80px] h-[100px] right-0 bottom-0 z-20 p-2 rounded-tr-md hover:bg-black/5 transition-colors duration-200"
                   aria-label="Next"
                 >
-                  <div className="flex items-center justify-center w-8 h-8 bg-black/20 group-hover:bg-black/60 transition-colors duration-200 rounded-md text-white/60 group-hover:text-white/90 backdrop-blur-sm">
+                  <div className="flex items-center justify-center w-8 h-8 bg-black/20 group-hover:bg-black/60 transition-colors duration-200 rounded-md text-white/60 group-hover:text-white/90 ">
                     <ChevronRight className="w-5 h-5" />
                   </div>
                 </button>
               )}
 
               <Image
-                src={post.thumbnail || "/place.png"}
-                alt={post.title || "Post image"}
+                src={post.thumbnail}
+                alt={post.title}
                 width={1200}
                 height={900}
                 sizes="(max-width: 768px) 100vw, 1200px"
