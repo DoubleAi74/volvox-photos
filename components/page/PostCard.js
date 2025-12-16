@@ -50,7 +50,7 @@ export default function PostCard({
       <div className="p-1 rounded-md bg-[#f7f3ed]  shadow-md hover:shadow-neumorphic-soft transition-all duration-300 cursor-pointer h-full flex flex-col">
         {post.thumbnail ? (
           <div className="w-full aspect-[4/3] rounded-sm overflow-hidden relative">
-            <Image
+            {/* <Image
               src={post.thumbnail}
               alt={post.title}
               fill
@@ -58,6 +58,13 @@ export default function PostCard({
               unoptimized
               sizes="100vh"
               className="object-none"
+            /> */}
+            <Image
+              src={post.thumbnail} // absolute URL from DB is OK
+              alt={post.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
             />
           </div>
         ) : (

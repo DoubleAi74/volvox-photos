@@ -99,7 +99,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     try {
       userId = user?.uid;
     } catch (e) {
-      userId = "iSoumGsivCO1Bm8kU50oiFsBKm33";
+      console.error("Error retrieving user ID:", e);
     }
 
     console.log(userId);
