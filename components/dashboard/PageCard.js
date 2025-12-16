@@ -28,10 +28,8 @@ export default function PageCard({
                 src={page.thumbnail}
                 alt={page.title}
                 fill
-                objectFit="cover"
-                unoptimized
-                sizes="100vh"
-                className="object-none"
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover"
               />
             </div>
           ) : (

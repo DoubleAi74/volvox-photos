@@ -30,21 +30,6 @@ export default function PostCard({
 }) {
   const ContentIcon = contentTypeIcons[post.content_type] || FileText;
 
-  if (pageSlug === "meditations") {
-    console.log(
-      post.slug,
-      "rando",
-      post.thumbnail,
-      typeof post.thumbnail === "string"
-    );
-  } else {
-    if (post.thumbnail) {
-      console.log(post.slug, "thumb");
-    } else {
-      console.log(post.slug, "no thumb");
-    }
-  }
-
   return (
     <div className="group relative">
       <div className="p-1 rounded-md bg-[#f7f3ed]  shadow-md hover:shadow-neumorphic-soft transition-all duration-300 cursor-pointer h-full flex flex-col">

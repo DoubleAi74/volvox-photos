@@ -125,9 +125,8 @@ export default function PhotoShowModal({
                 alt={post.title || "Post image"}
                 width={1200}
                 height={900}
-                // Removed max-h-[65vh] so it scrolls naturally if needed,
-                // or keep it if you want the image to fit entirely before description starts.
-                // I kept it here to maintain your original look.
+                sizes="(max-width: 768px) 100vw, 1200px"
+                priority
                 className="w-auto h-auto max-h-[65vh] object-contain select-none shadow-lg"
               />
             </div>

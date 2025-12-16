@@ -102,7 +102,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
       console.error("Error retrieving user ID:", e);
     }
 
-    console.log(userId);
+    //console.log(userId);
     if (!userId) return alert("You must be logged in.");
 
     setThumbUploading(true);
