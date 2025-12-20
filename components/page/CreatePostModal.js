@@ -11,7 +11,7 @@ import {
   File,
   Image as ImageIcon,
 } from "lucide-react";
-import { uploadFile } from "@/lib/data";
+import { uploadFile, processImage } from "@/lib/data";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -92,8 +92,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
   // };
 
   const handleThumbnailUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
     let userId = null;
     try {
@@ -107,11 +107,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
 
     setThumbUploading(true);
     try {
-      // CHANGE 1
+      const processedFile = await processImage(rawFile);
 
       const securePath = `users/${userId}/post-thumbnails`;
 
-      const file_url = await uploadFile(file, securePath);
+      const file_url = await uploadFile(processedFile, securePath);
 
       setFormData((prev) => ({ ...prev, thumbnail: file_url }));
     } catch (error) {
@@ -121,25 +121,25 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     setThumbUploading(false);
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // const handleFileUpload = async (e) => {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
 
-    const userId = user?.uid;
-    if (!userId) return alert("You must be logged in.");
+  //   const userId = user?.uid;
+  //   if (!userId) return alert("You must be logged in.");
 
-    setFileUploading(true);
-    try {
-      // CHANGE 2
-      const securePath = `users/${userId}/post-content-files`;
-      const file_url = await uploadFile(file, securePath);
-      setFormData((prev) => ({ ...prev, content: file_url }));
-    } catch (error) {
-      console.error("Content file upload failed:", error);
-      alert("Content file upload failed.");
-    }
-    setFileUploading(false);
-  };
+  //   setFileUploading(true);
+  //   try {
+  //     // CHANGE 2
+  //     const securePath = `users/${userId}/post-content-files`;
+  //     const file_url = await uploadFile(file, securePath);
+  //     setFormData((prev) => ({ ...prev, content: file_url }));
+  //   } catch (error) {
+  //     console.error("Content file upload failed:", error);
+  //     alert("Content file upload failed.");
+  //   }
+  //   setFileUploading(false);
+  // };
 
   if (!isOpen) return null;
 

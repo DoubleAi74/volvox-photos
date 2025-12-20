@@ -5,9 +5,9 @@ import { NextResponse } from "next/server"; // <--- And this
 
 // In app/api/storage/upload/route.js
 export async function POST(request) {
-  console.log("--- ENV VAR DEBUG CHECK ---");
-  console.log("R2 DOMAIN IN ENV:", process.env.NEXT_PUBLIC_R2_DOMAIN);
-  console.log("--- END DEBUG CHECK ---");
+  // console.log("--- ENV VAR DEBUG CHECK ---");
+  // console.log("R2 DOMAIN IN ENV:", process.env.NEXT_PUBLIC_R2_DOMAIN);
+  // console.log("--- END DEBUG CHECK ---");
   try {
     // 1. Destructure 'folder' from the incoming request
     const { filename, contentType, folder } = await request.json();

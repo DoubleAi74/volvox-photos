@@ -55,8 +55,8 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
     // Add a check to ensure user is logged in
     const userId = user?.uid; // Use `user` directly
@@ -67,8 +67,10 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
 
     setUploading(true);
     try {
+      const processedFile = await processImage(rawFile);
+
       const securePath = `users/${userId}/page-thumbnails`;
-      const file_url = await uploadFile(file, securePath);
+      const file_url = await uploadFile(processedFile, securePath);
       setFormData((prev) => ({ ...prev, thumbnail: file_url }));
     } catch (error) {
       console.error("Upload failed:", error);
