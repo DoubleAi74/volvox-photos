@@ -76,21 +76,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     }
   };
 
-  // const handleThumbnailUpload = async (e) => {
-  //   const file = e.target.files[0];
-  //   if (!file) return;
-
-  //   setThumbUploading(true);
-  //   try {
-  //     const file_url = await uploadFile(file, "post-thumbnails");
-  //     setFormData((prev) => ({ ...prev, thumbnail: file_url }));
-  //   } catch (error) {
-  //     console.error("Thumbnail upload failed:", error);
-  //     alert("Thumbnail upload failed.");
-  //   }
-  //   setThumbUploading(false);
-  // };
-
   const handleThumbnailUpload = async (e) => {
     const rawFile = e.target.files[0];
     if (!rawFile) return;
@@ -120,26 +105,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     }
     setThumbUploading(false);
   };
-
-  // const handleFileUpload = async (e) => {
-  //   const file = e.target.files[0];
-  //   if (!file) return;
-
-  //   const userId = user?.uid;
-  //   if (!userId) return alert("You must be logged in.");
-
-  //   setFileUploading(true);
-  //   try {
-  //     // CHANGE 2
-  //     const securePath = `users/${userId}/post-content-files`;
-  //     const file_url = await uploadFile(file, securePath);
-  //     setFormData((prev) => ({ ...prev, content: file_url }));
-  //   } catch (error) {
-  //     console.error("Content file upload failed:", error);
-  //     alert("Content file upload failed.");
-  //   }
-  //   setFileUploading(false);
-  // };
 
   if (!isOpen) return null;
 

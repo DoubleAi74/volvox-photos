@@ -19,7 +19,7 @@ export default function PageCard({
   // Accept new props
   return (
     <div className="group relative">
-      <Link href={`/${usernameTag}/${page.slug}`}>
+      <Link href={`/${usernameTag}/${page.slug}`} prefetch>
         {/* ... (The inner content of the link is unchanged) ... */}
         <div className="p-2 rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft transition-all duration-300  h-full mb-[-10px] cursor-pointer">
           {page.thumbnail ? (

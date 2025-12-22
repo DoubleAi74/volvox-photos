@@ -77,7 +77,7 @@ export default function PhotoShowModal({
 
             <button
               onClick={handleCloseClick}
-              className="flex items-center focus:outline-none space-x-2 shrink-0 px-4 mr-3 py-1 text-sm font-small text-neutral-400 bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all border border-neutral-700"
+              className="flex items-center focus:outline-none space-x-2 shrink-0 px-4 py-1 text-sm font-small text-neutral-400 bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all border border-neutral-700"
             >
               <p>Close</p>
               <X size={15} />
@@ -89,7 +89,7 @@ export default function PhotoShowModal({
             <div
               key={post.id}
               onClick={handleImageClick}
-              className="relative bg-black select-none flex justify-center items-center overflow-hidden shrink-0 h-[65vh] w-full"
+              className="relative bg-black flex justify-center items-center overflow-hidden shrink-0 h-[65vh] w-full"
             >
               {/* BLUR PLACEHOLDER */}
               {post.blurDataURL && (
@@ -105,18 +105,17 @@ export default function PhotoShowModal({
 
               {/* FULL IMAGE */}
               <Image
-                //decoding="async"
+                decoding="async"
                 src={post.thumbnail}
                 alt={post.title}
-                layout="fill"
-                sizes="(max-width: 768px) 100vw, 1w"
+                fill
+                sizes="(max-width: 768px) 100vw: 100px"
                 onLoad={() => setIsLoaded(true)}
                 className={`
                   object-contain
-                  transition-opacity duration-10 ease-out
+                  transition-opacity duration-300 ease-out
                   ${isLoaded ? "opacity-100" : "opacity-0"}
                 `}
-                priority={true}
               />
 
               {/* PREVIOUS */}

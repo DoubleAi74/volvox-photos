@@ -2,3 +2,127 @@
 
 
 1 paste all the upload file codes to gpt with the question of how to implement what is in the document. 
+
+
+
+tree -L 3 -I 'node_modules|.next|.git|package*|*.config.*|public|README*|*favicon*|*jsconfig*|*DevNotes*|*DEVNOTES*'
+
+
+
+
+
+
+blur generation:
+
+
+if (postData.thumbnail) {
+const res = await fetch("/api/generate-blur", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ imageUrl: postData.thumbnail }),
+});
+
+if (!res.ok) {
+throw new Error("Blur generation failed");
+}
+
+const { blurDataURL: generatedBlur } = await res.json();
+console.log("blurgenData", generatedBlur);
+blurDataURL = generatedBlur;
+}
+
+const postsCollectionRef = collection(db, "posts");
+
+await addDoc(postsCollectionRef, {
+...postData,
+slug: finalSlug,
+blurDataURL,
+created_date: serverTimestamp(),
+});
+
+api/generate-blur/route.js:
+
+import { NextResponse } from "next/server";
+import { Buffer } from "buffer";
+
+export async function POST(req) {
+console.log("🔥 generate-blur API HIT");
+try {
+const { imageUrl } = await req.json();
+
+if (!imageUrl) {
+return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
+}
+
+const url = new URL(imageUrl);
+const path = url.pathname;
+
+const blurURL = `https://files.volvox.pics/cdn-cgi/image/width=30,quality=30,blur=20,format=jpeg${path}`;
+
+const res = await fetch(blurURL);
+
+if (!res.ok) {
+return NextResponse.json(
+{ error: "Failed to fetch blur image" },
+{ status: 500 }
+);
+}
+
+const buffer = await res.arrayBuffer();
+const base64 = Buffer.from(buffer).toString("base64");
+
+return NextResponse.json({
+blurDataURL: `data:image/jpeg;base64,${base64}`,
+});
+} catch (err) {
+console.error("Blur generation failed:", err);
+return NextResponse.json({ error: "Internal error" }, { status: 500 });
+}
+}
+
+
+
+post counter:
+
+
+
+await setDoc(
+doc(db, "pages", postData.page_id),
+{
+postCount: increment(1),
+},
+{ merge: true }
+);
+
+
+
+await setDoc(
+doc(db, "pages", postData.page_id),
+{
+postCount: increment(-1),
+},
+{ merge: true }
+);
+
+
+
+
+Hang on. There is an unusual behaviour happening where some of the images get stuck on the blur version but snap to the non blur version when the screen gets sized down enough. Then when the window is sized back up the image stays crisp. Take a look. Any idea what is going on here? 
+
+This is my image code:
+
+<Image
+                key={post.id}
+                src={post.thumbnail}
+                alt={post.title}
+                fill
+                //sizes="(max-width: 768px) 100vw, 1200px"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+                className="w-auto h-auto max-w-full max-h-full object-contain select-none shadow-lg"
+              />
+
+
+and I notice something else. When the main page loads there are about 25 posts visible. About 30 are below the current view. If you open one of these with the post show modal and cycle through. The 25 in view will appear instantly, then the 30 out of view will be substantially slower. 
+
+Any idea why this is? 

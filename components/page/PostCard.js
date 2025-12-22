@@ -29,27 +29,30 @@ export default function PostCard({
   pageSlug,
 }) {
   const ContentIcon = contentTypeIcons[post.content_type] || FileText;
-
+  //console.log(post);
   return (
     <div className="group relative">
       <div className="p-1 rounded-md bg-[#f7f3ed]  shadow-md hover:shadow-neumorphic-soft transition-all duration-300 cursor-pointer h-full flex flex-col">
         {post.thumbnail ? (
-          <div className="w-full aspect-[4/3] rounded-sm overflow-hidden relative">
-            {/* <Image
-              src={post.thumbnail}
-              alt={post.title}
-              fill
-              objectFit="cover"
-              unoptimized
-              sizes="100vh"
-              className="object-none"
-            /> */}
+          <div
+            className="w-full aspect-[4/3] rounded-sm overflow-hidden relative"
+            style={{
+              // Apply the blur to the container.
+              // This stays visible permanently behind the image.
+              backgroundImage: post.blurDataURL
+                ? `url("${post.blurDataURL}")`
+                : undefined,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <Image
-              src={post.thumbnail} // absolute URL from DB is OK
+              src={post.thumbnail}
               alt={post.title}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
+              priority={true}
             />
           </div>
         ) : (

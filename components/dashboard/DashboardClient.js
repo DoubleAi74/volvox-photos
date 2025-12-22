@@ -316,7 +316,8 @@ export default function DashboardClient({
           )}
         </div>
         {/* Scroll Spacer */}
-        <div className="p-6 min-h-[150vh]"></div>
+
+        <div className="p-6 min-h-[50vh]"></div>
 
         {/* BUTTONS & MODALS */}
         {authLoading ? (

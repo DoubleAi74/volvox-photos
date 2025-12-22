@@ -131,11 +131,11 @@ export default function PageViewClient({
     }
   };
 
-  const handleDeletePost = async (postId) => {
+  const handleDeletePost = async (postData) => {
     if (!isOwner || !page) return;
     if (confirm("Are you sure you want to delete this post?")) {
       try {
-        await deletePost(postId, posts);
+        await deletePost(posts, postData);
         await refreshPosts(); // Use the optimized refresh
       } catch (error) {
         console.error("Error deleting post:", error);
@@ -163,6 +163,8 @@ export default function PageViewClient({
 
   // Since the Server Component already handled the 404/User not found cases,
   // we can rely on initialPage existing here. If it was null, the Server would have rendered the 404.
+
+  const skeletonCount = page?.postCount ?? 0;
 
   return (
     <div
@@ -212,8 +214,8 @@ export default function PageViewClient({
           {loadingPosts ? ( // Use local loading state for mutations/re-fetches
             // SKELETON GRID
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                <PostSkeleton key={i} />
+              {Array.from({ length: skeletonCount }).map((_, i) => (
+                <PostSkeleton key={i} aspect="4/3" />
               ))}
             </div>
           ) : (
@@ -246,7 +248,7 @@ export default function PageViewClient({
                         editModeOn={editOn}
                         pageSlug={params.pageSlug}
                         onEdit={() => setEditingPost(post)}
-                        onDelete={() => handleDeletePost(post.id)}
+                        onDelete={() => handleDeletePost(post)}
                       />
                     </div>
                   ))}
@@ -264,6 +266,8 @@ export default function PageViewClient({
               index={2}
             />
           </div>
+
+          <div className="p-6 min-h-[50vh]"></div>
 
           {/* MODALS */}
           <PhotoShowModal
