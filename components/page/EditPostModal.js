@@ -6,6 +6,7 @@ import { X, Upload, Link as LinkIcon, Type, File } from "lucide-react";
 import ImageWithLoader from "@/components/ImageWithLoader";
 
 import { uploadFile } from "@/lib/data";
+import { processImage } from "@/lib/processImage";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -81,17 +82,18 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
   };
 
   const handleThumbnailUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
     const userId = user?.uid;
     if (!userId) return alert("You must be logged in.");
 
     setThumbUploading(true);
     try {
-      // CHANGE 1
+      const processedFile = await processImage(rawFile);
+
       const securePath = `users/${userId}/post-thumbnails`;
-      const file_url = await uploadFile(file, securePath);
+      const file_url = await uploadFile(processedFile, securePath);
       setFormData((prev) => ({ ...prev, thumbnail: file_url }));
     } catch (error) {
       console.error("Thumbnail upload failed:", error);

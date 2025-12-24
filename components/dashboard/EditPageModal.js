@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { uploadFile } from "@/lib/data";
+import { processImage } from "@/lib/processImage";
+
 import ImageWithLoader from "@/components/ImageWithLoader";
 import { useAuth } from "@/context/AuthContext";
 
@@ -57,8 +59,8 @@ export default function EditPageModal({ isOpen, page, onClose, onSubmit }) {
   // };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
     const userId = user?.uid;
     if (!userId) {
@@ -68,9 +70,9 @@ export default function EditPageModal({ isOpen, page, onClose, onSubmit }) {
 
     setUploading(true);
     try {
-      // THIS IS THE KEY CHANGE
+      const processedFile = await processImage(rawFile);
       const securePath = `users/${userId}/page-thumbnails`;
-      const file_url = await uploadFile(file, securePath);
+      const file_url = await uploadFile(processedFile, securePath);
       setFormData((prev) => ({ ...prev, thumbnail: file_url }));
     } catch (error) {
       console.error("Upload failed:", error);

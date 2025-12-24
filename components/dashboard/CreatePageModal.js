@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { uploadFile } from "@/lib/data";
+import { processImage } from "@/lib/processImage";
+
 import ImageWithLoader from "@/components/ImageWithLoader";
 
 import { useAuth } from "@/context/AuthContext";

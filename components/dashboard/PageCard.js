@@ -23,7 +23,18 @@ export default function PageCard({
         {/* ... (The inner content of the link is unchanged) ... */}
         <div className="p-2 rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft transition-all duration-300  h-full mb-[-10px] cursor-pointer">
           {page.thumbnail ? (
-            <div className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative">
+            <div
+              className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
+              style={{
+                // Apply the blur to the container.
+                // This stays visible permanently behind the image.
+                backgroundImage: page.blurDataURL
+                  ? `url("${page.blurDataURL}")`
+                  : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
               <Image
                 src={page.thumbnail}
                 alt={page.title}

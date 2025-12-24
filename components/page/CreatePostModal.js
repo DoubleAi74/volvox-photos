@@ -11,7 +11,8 @@ import {
   File,
   Image as ImageIcon,
 } from "lucide-react";
-import { uploadFile, processImage } from "@/lib/data";
+import { uploadFile } from "@/lib/data";
+import { processImage } from "@/lib/processImage";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -93,6 +94,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     setThumbUploading(true);
     try {
       const processedFile = await processImage(rawFile);
+      console.log("file processed for thumbnail", processedFile);
 
       const securePath = `users/${userId}/post-thumbnails`;
 

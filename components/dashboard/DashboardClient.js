@@ -204,7 +204,7 @@ export default function DashboardClient({
     }
   };
 
-  const handleDeletePage = async (pageId) => {
+  const handleDeletePage = async (pageData) => {
     if (!isOwner || !profileUser) return;
     if (
       confirm(
@@ -212,7 +212,7 @@ export default function DashboardClient({
       )
     ) {
       try {
-        await deletePage(pageId, pages);
+        await deletePage(pages, pageData);
         await refreshPages();
       } catch (error) {
         console.error("Failed to delete page:", error);
@@ -308,7 +308,7 @@ export default function DashboardClient({
                   isOwner={isOwner}
                   editModeOn={editOn}
                   usernameTag={profileUser.usernameTag}
-                  onDelete={() => handleDeletePage(page.id)}
+                  onDelete={() => handleDeletePage(page)}
                   onEdit={() => setEditingPage(page)}
                 />
               ))}

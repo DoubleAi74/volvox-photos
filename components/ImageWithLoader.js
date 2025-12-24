@@ -31,7 +31,7 @@ export default function ImageWithLoader({
         height={fill ? undefined : height}
         sizes={sizes}
         priority={priority}
-        onLoadingComplete={() => setIsLoading(false)}
+        onLoad={() => setIsLoading(false)}
         className={`${className} transition-opacity duration-300 ${
           isLoading ? "opacity-0" : "opacity-100"
         }`}
