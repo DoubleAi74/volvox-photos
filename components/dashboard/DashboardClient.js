@@ -411,7 +411,7 @@ export default function DashboardClient({
           <div className="flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push("/welcome")}
+                onClick={() => router.push("/")}
                 className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
               >
                 <Plus className="w-5 h-5" />
