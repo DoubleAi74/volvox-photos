@@ -15,7 +15,7 @@ export default function PageInfoEditor({
   index,
 }) {
   // 1. Initialize with Server Data immediately
-  // The page loads with content already present. No "Loading..." state needed.
+  // The page loads with content already present. No "" state needed.
   const [text, setText] = useState(initialText);
   const [serverText, setServerText] = useState(initialText);
 
@@ -92,59 +92,40 @@ export default function PageInfoEditor({
 
   // Render
   return (
-    <section className="mb-6 mt-[-10px]">
-      {loading && !text ? (
-        <div className="text-sm text-muted animate-pulse">Loading info...</div>
-      ) : canEdit ? (
-        editOn ? ( // Editable UI for owner
+    <section className="mb-6 pt-0">
+      <div className="min-h-[96px]">
+        {loading && !text ? (
+          <div className="rounded-md bg-neutral-100 animate-pulse min-h-[96px]" />
+        ) : canEdit && editOn ? (
           <div className="relative">
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              rows={4}
-              className="w-full p-3 border rounded-md resize-none "
-              placeholder="Write something for your dashboard..."
+              rows={3}
+              className="w-full p-3 border rounded-md resize-none leading-relaxed"
             />
-            <div className="mt-2 flex items-center gap-3">
-              <div
-                className={`text-sm ${
-                  error ? "text-red-500" : "text-neutral-500"
-                }`}
-              ></div>
-            </div>
-            <div className="absolute bottom-5 right-3">
+            <div className="absolute bottom-4 right-3">
               <label className="flex items-center gap-2 text-sm text-neutral-600">
-                {error ?? (text === serverText ? "Saved" : "Unsaved changes")}
+                {saving
+                  ? "Saving..."
+                  : error ??
+                    (text === serverText ? "Saved" : "Unsaved changes")}
               </label>
             </div>
           </div>
         ) : (
-          <div className="prose max-w-none relative">
+          <div className="prose max-w-none min-h-[96px]">
             {serverText ? (
               <div
-                className="bg-[#f7efe4] p-3 rounded-md shadow-sm text-[#474747]"
+                className="bg-[#f7efe4] p-3 rounded-md shadow-sm"
                 dangerouslySetInnerHTML={{ __html: serverText }}
               />
             ) : (
               <div className="text-sm text-neutral-500">Welcome</div>
             )}
-            {/* Bottom-right checkbox */}
-            <div className="absolute top-3 right-3"></div>
           </div>
-        )
-      ) : (
-        // Read-only view for visitors
-        <div className="prose max-w-none">
-          {serverText ? (
-            <div
-              className="bg-[#f7efe4] p-3  rounded-md shadow-sm"
-              dangerouslySetInnerHTML={{ __html: serverText }}
-            />
-          ) : (
-            <div className="text-sm text-neutral-500">Welcome</div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

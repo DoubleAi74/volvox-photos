@@ -71,27 +71,13 @@ export default function PhotoShowModal({
         <div className="relative flex flex-col w-full h-full bg-neutral-900 border border-neutral-800 text-neutral-100">
           {/* HEADER */}
           <div className="flex shrink-0 justify-between items-center px-2 py-2 border-b border-neutral-800 bg-neutral-900 z-10">
-            {/* <h2 className="text-lg font-medium tracking-wide truncate pr-4 ml-3 text-neutral-200">
-              {post.title}
-            </h2> */}
-
-            <h2
-              className="
-    ml-3 pr-4
-    text-base sm:text-lg
-    font-medium tracking-wide
-    text-neutral-200
-    break-words
-    leading-tight
-    min-w-0
-  "
-            >
+            <h2 className="text-lg font-medium tracking-wide truncate pr-4 ml-3 text-neutral-200">
               {post.title}
             </h2>
 
             <button
               onClick={handleCloseClick}
-              className="flex items-center focus:outline-none space-x-2 shrink-0 px-2  py-1 text-sm  text-neutral-400 bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all border border-neutral-700"
+              className="flex items-center focus:outline-none space-x-2 shrink-0 px-2 mr-5 py-1 text-sm  text-neutral-400 bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all border border-neutral-700"
             >
               <p>Close</p>
               <X size={15} />
@@ -105,34 +91,6 @@ export default function PhotoShowModal({
               onClick={handleImageClick}
               className="relative bg-black select-none flex justify-center items-center overflow-hidden shrink-0 h-[65vh] w-full"
             >
-              {/* BLUR PLACEHOLDER */}
-              {post.blurDataURL && (
-                <Image
-                  src={post.blurDataURL}
-                  alt=""
-                  fill
-                  aria-hidden
-                  priority
-                  className="object-contain  opacity-100"
-                />
-              )}
-
-              {/* FULL IMAGE */}
-              <Image
-                //decoding="async"
-                src={post.thumbnail}
-                alt={post.title}
-                layout="fill"
-                sizes="(max-width: 768px) 100vw, 50w"
-                onLoad={() => setIsLoaded(true)}
-                className={`
-                  object-contain
-                  transition-opacity duration-10 ease-out
-                  ${isLoaded ? "opacity-100" : "opacity-0"}
-                `}
-                priority={true}
-              />
-
               {/* PREVIOUS */}
               {hasPrevious && (
                 <button
@@ -140,9 +98,9 @@ export default function PhotoShowModal({
                     e.stopPropagation();
                     onPrevious();
                   }}
-                  className="absolute group flex justify-start items-end  w-2/5 h-1/3 left-0 bottom-0 z-20 px-4 py-2 hover:bg-black/5 rounded-tr-md  transition-colors duration-200"
+                  className="absolute group flex justify-start items-end  w-2/5 h-1/2 left-0 bottom-0 z-20 p-2 bg-blue-200 hover:bg-black/5 transition-colors duration-200"
                 >
-                  <div className="flex items-center justify-center w-8 h-8 bg-black/20    transition-colors duration-200 rounded-md text-white/40 group-hover:text-white/90">
+                  <div className="flex items-center justify-center w-8 h-8 bg-red-200 group-hover:bg-black/60 transition-colors duration-200 rounded-md text-white/60 group-hover:text-white/90">
                     <ChevronLeft className="w-5 h-5" />
                   </div>
                 </button>
@@ -155,22 +113,12 @@ export default function PhotoShowModal({
                     e.stopPropagation();
                     onNext();
                   }}
-                  className="absolute group flex justify-end items-end w-2/5 h-1/3 right-0 bottom-0 px-4 py-2 z-20  hover:bg-black/5  rounded-tl-md transition-colors duration-200"
+                  className="absolute group flex justify-end items-end  w-2/5 h-1/2 right-0 bottom-0 z-20 p-2 bg-blue-200 hover:bg-black/5 transition-colors duration-200"
                 >
-                  <div className="flex items-center justify-center w-8 h-8 bg-black/20   transition-colors duration-200 rounded-md text-white/40 group-hover:text-white/90">
+                  <div className="flex items-center justify-center w-8 h-8 bg-red-800  group-hover:bg-black/60 transition-colors duration-200 rounded-md text-white/60 group-hover:text-white/90">
                     <ChevronRight className="w-5 h-5" />
                   </div>
                 </button>
-              )}
-              {/* //bg-black/20 */}
-            </div>
-          </div>
-
-          {/* FOOTER */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-5 py-4 gap-4 bg-neutral-900 border-t border-neutral-800">
-            <div className="text-sm font-light text-neutral-400 leading-relaxed w-full">
-              {post.description || (
-                <span className="italic opacity-50">...</span>
               )}
             </div>
           </div>

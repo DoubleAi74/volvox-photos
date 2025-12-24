@@ -111,7 +111,7 @@ export default function DashboardInfoEditor({
               className="w-full p-3 border rounded-md resize-none"
               placeholder="Write something for your dashboard..."
             />
-            <div className="absolute bottom-5 right-3">
+            <div className="absolute bottom-4 right-3">
               <label className="flex items-center gap-2 text-sm text-neutral-600">
                 {saving
                   ? "Saving..."

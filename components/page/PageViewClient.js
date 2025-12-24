@@ -168,12 +168,12 @@ export default function PageViewClient({
 
   return (
     <div
-      className="p-3 md:px-6 pt-0 pb-0  min-h-screen"
+      className="p-0 md:px-6 pt-0 pb-0 min-h-screen w-fit min-w-full"
       style={{
         backgroundColor: hexToRgba(activeBackHex, 0.5),
       }}
     >
-      <div className="sticky top-0 left-0 right-0 z-10 pt-[0px] px-0 bg-gray-100">
+      <div className="sticky top-0 left-0 right-0 z-10 pt-[0px] px-0 bg-gray-100 shadow-md">
         <div className="">
           <div
             className="flex items-center  justify-center md:justify-start text-2xl font-bold h-[47px] pt-4 pb-3  text-white px-9 "
@@ -188,16 +188,13 @@ export default function PageViewClient({
       </div>
 
       <div
-        className=" min-h-screen px-4 md:px-5 pt-4 pb-0  shadow-slate-800"
+        className=" min-h-screen px-4 md:px-5 pt-5 pb-0 shadow-xl"
         style={{
           backgroundColor: hexToRgba(activeBackHex, 1),
         }}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto ">
           {/* HEADER SECTION - Rendered with Server Data immediately */}
-          <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-            {/* Action Buttons */}
-          </div>
 
           {/* Page Info Editor */}
           <div className="w-full">
@@ -209,7 +206,6 @@ export default function PageViewClient({
               index={1}
             />
           </div>
-
           {/* POSTS GRID */}
           {loadingPosts ? ( // Use local loading state for mutations/re-fetches
             // SKELETON GRID
@@ -256,7 +252,6 @@ export default function PageViewClient({
               )}
             </>
           )}
-
           <div className="w-full mt-10">
             <PageInfoEditor
               pid={page?.id}
@@ -266,9 +261,7 @@ export default function PageViewClient({
               index={2}
             />
           </div>
-
           <div className="p-6 min-h-[50vh]"></div>
-
           {/* MODALS */}
           <PhotoShowModal
             post={selectedPostForModal}
@@ -279,7 +272,6 @@ export default function PageViewClient({
             hasNext={currentIndex < displayedPosts.length - 1}
             hasPrevious={currentIndex > 0}
           />
-
           {isOwner && (
             <>
               <CreatePostModal
@@ -296,7 +288,6 @@ export default function PageViewClient({
               />
             </>
           )}
-
           {/* If public but not owner, simple create modal */}
           {!isOwner && isPublic && (
             <CreatePostModal
@@ -305,15 +296,12 @@ export default function PageViewClient({
               onSubmit={handleCreatePost}
             />
           )}
-
           <Link href={`/${usernameTag}`}>
-            <button className="p-3 fixed bottom-6 left-7 md:left-10 h-[44px] w-auto rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed">
+            <button className="p-3 fixed bottom-6 left-9 md:left-10 h-[44px] w-auto rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed">
               <ArrowLeft className="w-5 h-5 text-neumorphic-text mx-0" />
             </button>
           </Link>
-
           {/* FLOATING ACTION BUTTONS (Mobile & Desktop) */}
-
           {/* Show 'New Post' button */}
           {!isOwner && isPublic && (
             <>
@@ -324,7 +312,7 @@ export default function PageViewClient({
                   className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
                 >
                   <Plus className="w-5 h-5" />
-                  New Post
+                  post
                 </button>
               </div>
 
@@ -335,38 +323,52 @@ export default function PageViewClient({
                   className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
                 >
                   <Plus className="w-5 h-5" />
-                  New Post
+                  new post
                 </button>
               </div>
             </>
           )}
-
           {isOwner && (
             <>
               {/* Mobile view */}
-              <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-7 z-[100]">
+              <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-9 z-[100]">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
+                  className="flex items-center gap-2  p-3 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
                 >
                   <Plus className="w-5 h-5" />
-                  New Post
+                  post
                 </button>
 
                 <button
                   onClick={() => setEditOn(!editOn)}
-                  className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
+                  className={`flex text-sm items-center gap-2 px-3  rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
                     editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
                   }`}
                 >
                   <div className={editOn ? "text-white" : ""}>
-                    Edit: {editOn ? "on" : "off"}
+                    {/* Edit: {editOn ? "on" : "off"}
+                     */}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="size-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                      />
+                    </svg>
                   </div>
                 </button>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={handleLogout}
-                    className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
+                    className="flex items-center justify-center px-3 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
                     title="Log Out"
                   >
                     <LogOut className="w-5 h-5" />
@@ -381,7 +383,7 @@ export default function PageViewClient({
                   className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
                 >
                   <Plus className="w-5 h-5" />
-                  New Post
+                  new post
                 </button>
 
                 <button
