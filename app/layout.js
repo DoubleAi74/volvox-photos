@@ -12,8 +12,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="bg-black">
+      <body className={`${inter.className} bg-black text-white `}>
         <AuthContextProvider>
           <ThemeContextProvider>
             <main className="flex-1">{children}</main>

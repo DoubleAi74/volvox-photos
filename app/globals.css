@@ -15,7 +15,7 @@
 
 html,
 body {
-  background-color: #ffffff;
+  background-color: #000000;
   overscroll-behavior-y: none; /* Disables vertical scroll-chaining and rubber banding */
 }
 
@@ -23,19 +23,6 @@ html,
 body,
 #__next {
   height: 100%;
-}
-
-/* Neumorphic Text Styles */
-.text-neumorphic {
-  color: #8a8a8a;
-  text-shadow: 1px 1px 2px #ffffff, -1px -1px 2px #bebebe;
-}
-
-/* Neumorphic Button Base Styles */
-.btn-neumorphic {
-  background: #fffef8;
-  border: none;
-  transition: all 0.2s ease;
 }
 
 /* React Quill Rich Text Editor Styles */
