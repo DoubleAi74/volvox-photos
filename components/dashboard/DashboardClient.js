@@ -14,6 +14,8 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { hexToRgba } from "@/components/dashboard/DashHeader";
 import { useTheme } from "@/context/ThemeContext";
 
+import ActionButton from "@/components/ActionButton";
+
 import {
   createPage,
   deletePage,
@@ -57,7 +59,7 @@ export default function DashboardClient({
     profileUser?.dashboard?.dashHex || "#000000"
   );
   const [backHex, setBackHex] = useState(
-    profileUser?.dashboard?.backHex || "#ffffff"
+    profileUser?.dashboard?.backHex || "#F4F4F5"
   );
 
   // Handle Dash Hex Changes
@@ -321,111 +323,78 @@ export default function DashboardClient({
 
         {/* BUTTONS & MODALS */}
         {authLoading ? (
-          <div className="fixed bottom-6 right-8 z-[100] h-[44px] flex items-center">
-            <div className="flex items-center gap-4 animate-pulse">
-              <button
-                onClick={() => router.push("/login")}
-                className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]"
-              >
-                <UserIcon className="w-5 h-5 " />
-                <span className="text-sm">...</span>
-              </button>
+          /* ---------- Auth Loading (non-interactive) ---------- */
+          <div
+            className="fixed bottom-6 right-6 z-[100]"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="flex items-center gap-2 h-[44px] px-4 rounded-sm bg-black/30 text-zinc-300 backdrop-blur-[1px] border border-white/10 opacity-60 pointer-events-none">
+              <UserIcon className="w-5 h-5" />
+              <span className="text-sm">Loading…</span>
             </div>
           </div>
         ) : isOwner ? (
-          <>
-            {/* Mobile buttons view */}
-            <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
-              {editOn && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                >
-                  <Plus className="w-5 h-5" />
-                  New Page
-                </button>
-              )}
-
-              {/* MAIN EDIT BUTTON */}
-              <button
-                onClick={toggleEditMode}
-                className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
-                  editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
-                }`}
-              >
-                <div className={editOn ? "text-white" : ""}>
-                  Edit: {editOn ? "on" : "off"}
-                </div>
-              </button>
-
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                  title="Log Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Desktop buttons view */}
-            <div className="hidden md:flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-              >
+          /* ---------- Owner Controls ---------- */
+          <div
+            className="fixed bottom-6 right-6 z-[100] flex flex-wrap items-center gap-3"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            {/* New Page (only when edit mode is ON) */}
+            {editOn && (
+              <ActionButton onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-5 h-5" />
-                New Page
-              </button>
+                <span className="hidden sm:inline">New Page</span>
+              </ActionButton>
+            )}
 
-              {/* MAIN EDIT BUTTON */}
-              <button
-                onClick={toggleEditMode}
-                className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
-                  editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
-                }`}
-              >
-                <div className={editOn ? "text-white" : ""}>
-                  Edit: {editOn ? "on" : "off"}
-                </div>
-              </button>
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]">
-                  <UserIcon className="w-5 h-5" />
-                  <span className="text-sm">{currentUser?.email}</span>
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                  title="Log Out"
+            {/* Edit Toggle */}
+            <ActionButton onClick={toggleEditMode} active={editOn}>
+              <span className="">
+                {/* pencil icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
                 >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                  />
+                </svg>
+              </span>
+              <span className="hidden md:inline">Edit</span>
+            </ActionButton>
+
+            {/* Desktop-only user badge */}
+            <div className="hidden md:flex items-center gap-2 h-[44px] px-4 rounded-sm bg-black/30 text-zinc-300 backdrop-blur-[1px] border border-white/10">
+              <UserIcon className="w-5 h-5" />
+              <span className="text-sm">{currentUser?.email}</span>
             </div>
-          </>
+
+            {/* Logout */}
+            <ActionButton onClick={handleLogout} title="Log out">
+              <LogOut className="w-5 h-5" />
+            </ActionButton>
+          </div>
         ) : (
-          <div className="flex items-center gap-4 mt-4 fixed bottom-6 right-8 z-[100]">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/")}
-                className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="text-sm">Create your collection</span>
-              </button>
+          /* ---------- Logged-out View ---------- */
+          <div
+            className="fixed bottom-6 right-6 z-[100] flex items-center gap-3"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <ActionButton onClick={() => router.push("/")}>
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Create your collection</span>
+            </ActionButton>
 
-              <button
-                onClick={() => router.push("/login")}
-                className="flex text-sm font-medium items-center gap-2 hover:shadow-neumorphic-soft px-3 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[35px] md:h-[44px] md:p-4"
-              >
-                <UserIcon className="w-5 h-5" />
-                <span className="text-sm">Login</span>
-              </button>
-            </div>
+            <ActionButton onClick={() => router.push("/login")}>
+              <UserIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Login</span>
+            </ActionButton>
           </div>
         )}
 

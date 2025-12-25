@@ -22,6 +22,7 @@ import { lighten } from "@/components/dashboard/DashHeader";
 import { hexToRgba } from "@/components/dashboard/DashHeader";
 
 import { useTheme } from "@/context/ThemeContext";
+import ActionButton from "@/components/ActionButton";
 
 // 1. Define Skeletons within the Client Component (Crucial Fix)
 const PostSkeleton = () => (
@@ -297,65 +298,49 @@ export default function PageViewClient({
             />
           )}
           <Link href={`/${usernameTag}`}>
-            <button className="p-3 fixed bottom-6 left-9 md:left-10 h-[44px] w-auto rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed">
-              <ArrowLeft className="w-5 h-5 text-neumorphic-text mx-0" />
-            </button>
+            <ActionButton
+              title="Back"
+              className="fixed bottom-6 left-6 md:left-10 z-[100]"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </ActionButton>
           </Link>
           {/* FLOATING ACTION BUTTONS (Mobile & Desktop) */}
           {/* Show 'New Post' button */}
-          {!isOwner && isPublic && (
-            <>
-              {/* Mobile view */}
-              <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-7 z-[100]">
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                >
-                  <Plus className="w-5 h-5" />
-                  post
-                </button>
-              </div>
+          <div
+            className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            {/* Public, non-owner */}
+            {!isOwner && isPublic && (
+              <ActionButton onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">New post</span>
+              </ActionButton>
+            )}
 
-              {/* Desktop view */}
-              <div className="hidden md:flex items-center gap-4 mt-4 fixed bottom-6 right-10 z-[100]">
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                >
+            {/* Owner controls */}
+            {isOwner && (
+              <>
+                <ActionButton onClick={() => setShowCreateModal(true)}>
                   <Plus className="w-5 h-5" />
-                  new post
-                </button>
-              </div>
-            </>
-          )}
-          {isOwner && (
-            <>
-              {/* Mobile view */}
-              <div className="flex md:hidden items-center gap-4 mt-4 fixed bottom-6 right-9 z-[100]">
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2  p-3 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                >
-                  <Plus className="w-5 h-5" />
-                  post
-                </button>
+                  <span className="hidden sm:inline">New post</span>
+                </ActionButton>
 
-                <button
+                <ActionButton
                   onClick={() => setEditOn(!editOn)}
-                  className={`flex text-sm items-center gap-2 px-3  rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
-                    editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
-                  }`}
+                  active={editOn}
+                  title="Toggle edit mode"
                 >
-                  <div className={editOn ? "text-white" : ""}>
-                    {/* Edit: {editOn ? "on" : "off"}
-                     */}
+                  <span className="">
+                    {/* pencil icon */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
                       stroke="currentColor"
-                      className="size-6"
+                      className="w-5 h-5"
                     >
                       <path
                         strokeLinecap="round"
@@ -363,57 +348,22 @@ export default function PageViewClient({
                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
                       />
                     </svg>
-                  </div>
-                </button>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center justify-center px-3 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                    title="Log Out"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
+                  </span>
+                  <span className="hidden md:inline">Edit</span>
+                </ActionButton>
+
+                {/* Desktop user badge */}
+                <div className="hidden md:flex items-center gap-2 h-[44px] px-4 rounded-sm bg-black/30 text-zinc-300 backdrop-blur-[1px] border border-white/10">
+                  <UserIcon className="w-5 h-5" />
+                  <span className="text-sm">{currentUser?.email}</span>
                 </div>
-              </div>
 
-              {/* Desktop view */}
-              <div className="hidden md:flex items-center gap-4 mt-4 fixed bottom-6 right-10 z-[100]">
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                >
-                  <Plus className="w-5 h-5" />
-                  new post
-                </button>
-
-                <button
-                  onClick={() => setEditOn(!editOn)}
-                  className={`flex text-sm items-center gap-2 px-4 py-2 rounded-md shadow-md text-neumorphic-text font-medium hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px] ${
-                    editOn ? "bg-[#0e4f19]" : "bg-[#f7f3ed]"
-                  }`}
-                >
-                  <div className={editOn ? "text-white" : ""}>
-                    Edit: {editOn ? "on" : "off"}
-                  </div>
-                </button>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text h-[44px]">
-                    <UserIcon className="w-5 h-5" />
-                    <span className="text-sm">{currentUser?.email}</span>
-                  </div>
-
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center justify-center px-6 py-2 rounded-md bg-[#f7f3ed] shadow-md text-neumorphic-text hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed h-[44px]"
-                    title="Log Out"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+                <ActionButton onClick={handleLogout} title="Log out">
+                  <LogOut className="w-5 h-5" />
+                </ActionButton>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
