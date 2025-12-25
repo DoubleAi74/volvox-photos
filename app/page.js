@@ -1,9 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useRouter } from "next/navigation";
-
-export default function toWelcome() {
-  const router = useRouter();
-
-  router.push("/welcome");
+export default function Page() {
+  redirect("/welcome");
 }

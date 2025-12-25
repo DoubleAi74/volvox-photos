@@ -54,6 +54,11 @@ function DashHeaderInner(
     searchParams.get("edit") === "title"
   );
 
+  const [savedTitle, setSavedTitle] = useState(
+    profileUser?.usernameTitle ?? ""
+  );
+  const [savedTag, setSavedTag] = useState(profileUser?.usernameTag ?? "");
+
   const [tempTitleText, setTempTitleText] = useState(
     profileUser && !heightShort ? `${profileUser.usernameTitle}` : ""
   );
@@ -79,6 +84,14 @@ function DashHeaderInner(
 
   //   return () => clearTimeout(timer);
   // }, [headerColor, initialHex, profileUser, router]);
+
+  useEffect(() => {
+    if (profileUser) {
+      setSavedTitle(profileUser.usernameTitle);
+      setSavedTag(profileUser.usernameTag);
+      setTempTitleText(!heightShort ? profileUser.usernameTitle : "");
+    }
+  }, [profileUser]);
 
   // 2. SYNC EFFECT: Ensure browser Back/Forward buttons still update the UI
   useEffect(() => {
@@ -108,8 +121,14 @@ function DashHeaderInner(
   useEffect(() => {
     const baseRaw = lowercaseDashed(tempTitleText);
 
-    if (profileUser && tempTitleText === profileUser.usernameTitle) {
-      setSuggestedTag(profileUser.usernameTag);
+    // if (profileUser && tempTitleText === profileUser.usernameTitle) {
+    //   setSuggestedTag(profileUser.usernameTag);
+    //   setIsCheckingUser(false);
+    //   return;
+    // }
+
+    if (tempTitleText === savedTitle) {
+      setSuggestedTag(savedTag);
       setIsCheckingUser(false);
       return;
     }
@@ -144,18 +163,20 @@ function DashHeaderInner(
     if (!suggestedTag) return alert("Invalid or unavailable username.");
 
     setIsSaving(true);
+
     try {
-      await updateUsername(profileUser?.uid, suggestedTag, tempTitleText);
+      await updateUsername(profileUser.uid, suggestedTag, tempTitleText);
 
-      // Force URL state on save
-      router.replace(`/${suggestedTag}?edit=title`);
+      // Update local confirmed state
+      setSavedTitle(tempTitleText);
+      setSavedTag(suggestedTag);
 
-      profileUser.usernameTitle = tempTitleText;
-      profileUser.usernameTag = suggestedTag;
+      router.replace(`/${suggestedTag}?edit=title`, { scroll: false });
     } catch (error) {
       console.error("Error saving username:", error);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const combinedClassName = `backdrop-blur-md  ${className || ""}`;
@@ -268,7 +289,7 @@ function DashHeaderInner(
               >
                 {isSaving
                   ? "..."
-                  : profileUser?.usernameTitle === tempTitleText
+                  : savedTitle === tempTitleText
                   ? "Saved"
                   : "Save"}
               </button>
