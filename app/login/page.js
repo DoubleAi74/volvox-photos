@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { lowercaseDashed, findAvailableUsernameTag } from "@/lib/data";
 import NextLink from "next/link";
+import Head from "next/head";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ export default function LoginPage() {
   const [isCheckingUser, setIsCheckingUser] = useState(false);
 
   const [error, setError] = useState(null);
-  const [isSigningUp, setIsSigningUp] = useState(false); // Default to Login
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const { user, loading, signup, login } = useAuth();
@@ -52,7 +53,7 @@ export default function LoginPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [usernameBase, isSigningUp, findAvailableUsernameTag]);
+  }, [usernameBase, isSigningUp]);
 
   // Submit Handler
   const handleSubmit = async (e) => {
@@ -81,201 +82,210 @@ export default function LoginPage() {
     }
   };
 
-  // Loading Screen (Dark Theme)
+  // Loading Screen
   if (loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-500 border-t-white" />
       </div>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden font-sans text-white">
-      {/* 1. BACKGROUND IMAGE LAYER */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: "url('/Background.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/20" />
-      </div>
+    <>
+      {/* ----------------------------------
+         PAGE-SCOPED BACKGROUND PRELOAD
+      ---------------------------------- */}
+      <Head>
+        <link
+          rel="preload"
+          as="image"
+          href="/background-2560.webp"
+          media="(min-width: 769px)"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/background-1440.webp"
+          media="(max-width: 768px)"
+        />
+      </Head>
 
-      {/* 2. GLASS CARD CONTAINER */}
-      <div className="relative z-10 w-full max-w-lg px-4 sm:px-0">
-        <div className="relative overflow-hidden rounded-lg bg-black/60 px-8 py-10 shadow-2xl backdrop-blur-md border border-white/5 sm:px-16">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="flex items-center justify-center gap-1">
-              <span className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-                Volvox Pictures
-              </span>
-            </h1>
-            <p className="text-zinc-300 mt-5 mb-6">
-              {isSigningUp
-                ? "Create your profile to start collecting"
-                : "Welcome back to your collection"}
-            </p>
-          </div>
+      <div className="relative min-h-screen overflow-hidden font-sans text-white">
+        {/* ----------------------------------
+           BACKGROUND (FADE + DIMINISHING BLUR)
+        ---------------------------------- */}
+        <div className="absolute inset-0 z-0">
+          {/* Instant dark base */}
+          <div className="absolute inset-0 bg-black" />
 
-          <form onSubmit={handleSubmit} className="mt-0 space-y-5">
-            {/* USERNAME FIELD (Only for Sign Up) */}
-            {isSigningUp && (
-              <div>
-                <label className="sr-only">Username</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={usernameBase}
-                    onChange={(e) => setUsernameBase(e.target.value)}
-                    placeholder="Full Name (e.g. Adam Aldridge)"
-                    className={`
-                      block w-full rounded-sm
-                      border-0 py-3 px-4
-                      text-white placeholder:text-zinc-600
-                      bg-zinc-900/50
-                      ring-1 ring-inset ring-white/10
-                      focus:ring-1 focus:ring-inset focus:ring-[#9b9898f7]
-                      outline-none transition-shadow duration-200
-                      ${
-                        suggestedTag
-                          ? "ring-green-500/30 focus:ring-green-500/50"
-                          : ""
-                      }
-                    `}
-                    required
-                  />
+          <picture>
+            <source srcSet="/background-1440.webp" media="(max-width: 768px)" />
+            <img
+              src="/background-2560.webp"
+              alt=""
+              aria-hidden="true"
+              fetchpriority="high"
+              decoding="async"
+              className="
+                h-full w-full object-cover
+                opacity-0
+                motion-safe:animate-[fadeInBlur_1.5s_cubic-bezier(0.16,1,0.3,1)_forwards]
+              "
+            />
+          </picture>
 
-                  {/* Availability Feedback */}
-                  <div className="mt-2 h-5 text-xs font-medium tracking-wide">
-                    {usernameBase.length > 0 && usernameBase.length < 3 && (
-                      <span className="text-zinc-500">Too short</span>
-                    )}
+          {/* Theme overlay */}
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
 
-                    {usernameBase.length >= 3 && (
-                      <>
-                        {isCheckingUser ? (
-                          <span className="text-zinc-400 animate-pulse">
-                            Checking availability...
-                          </span>
-                        ) : suggestedTag ? (
-                          <span className="text-zinc-500">
-                            volvox.pics/
-                            <span className="text-green-400 font-semibold ml-0.5">
-                              {suggestedTag}
+        {/* ----------------------------------
+           CONTENT
+        ---------------------------------- */}
+        <div
+          className="
+            relative z-10 flex min-h-[100svh] flex-col items-center
+            justify-start pt-[14svh]
+            md:min-h-screen md:justify-center md:pt-0
+            px-4
+          "
+        >
+          <div className="w-full max-w-lg">
+            <div className="relative overflow-hidden rounded-md bg-black/60 px-14 py-10 shadow-2xl backdrop-blur-[1px] border border-white/5">
+              {/* Header */}
+              <div className="text-center">
+                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+                  Volvox Pictures
+                </h1>
+                <p className="mt-5 mb-6 text-zinc-300">
+                  {isSigningUp
+                    ? "Create your profile to start collecting"
+                    : "Welcome back to your collection"}
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* USERNAME (SIGN UP ONLY) */}
+                {isSigningUp && (
+                  <div>
+                    <input
+                      type="text"
+                      value={usernameBase}
+                      onChange={(e) => setUsernameBase(e.target.value)}
+                      placeholder="Full Name (e.g. Adam Aldridge)"
+                      className={`
+                        block w-full rounded-sm px-4 py-3
+                        bg-zinc-900/50 text-white placeholder:text-zinc-600
+                        ring-1 ring-white/10 outline-none
+                        focus:ring-white/40
+                        ${
+                          suggestedTag
+                            ? "ring-green-500/30 focus:ring-green-500/50"
+                            : ""
+                        }
+                      `}
+                      required
+                    />
+
+                    <div className="mt-2 h-5 text-xs tracking-wide">
+                      {usernameBase.length > 0 && usernameBase.length < 3 && (
+                        <span className="text-zinc-500">Too short</span>
+                      )}
+
+                      {usernameBase.length >= 3 && (
+                        <>
+                          {isCheckingUser ? (
+                            <span className="text-zinc-400 animate-pulse">
+                              Checking availability…
                             </span>
-                          </span>
-                        ) : null}
-                      </>
-                    )}
+                          ) : suggestedTag ? (
+                            <span className="text-zinc-500">
+                              volvox.pics/
+                              <span className="ml-1 font-semibold text-green-400">
+                                {suggestedTag}
+                              </span>
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* EMAIL */}
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="
+                    block w-full rounded-sm px-4 py-3
+                    bg-zinc-900/50 text-white placeholder:text-zinc-600
+                    ring-1 ring-white/10 outline-none
+                    focus:ring-white/40
+                  "
+                  required
+                />
+
+                {/* PASSWORD */}
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="
+                    block w-full rounded-sm px-4 py-3
+                    bg-zinc-900/50 text-white placeholder:text-zinc-600
+                    ring-1 ring-white/10 outline-none
+                    focus:ring-white/40
+                  "
+                  required
+                />
+
+                {/* ERROR */}
+                {error && (
+                  <div className="text-center text-xs uppercase tracking-wide text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                {/* SUBMIT */}
+                <button
+                  type="submit"
+                  disabled={processing || (isSigningUp && !suggestedTag)}
+                  className={`
+                    w-full rounded-sm py-3 text-sm font-semibold
+                    transition-all
+                    ${
+                      processing || (isSigningUp && !suggestedTag)
+                        ? "cursor-not-allowed bg-zinc-300/60 text-neutral-700"
+                        : "bg-zinc-300 text-neutral-700 hover:bg-zinc-400"
+                    }
+                  `}
+                >
+                  {processing
+                    ? isSigningUp
+                      ? "Creating account…"
+                      : "Logging in…"
+                    : isSigningUp
+                    ? "Sign Up"
+                    : "Log In"}
+                </button>
+              </form>
+
+              {/* FOOTER */}
+              <div className="mt-8 text-center">
+                <NextLink
+                  href="/welcome"
+                  className="text-xs text-zinc-500 hover:text-zinc-300"
+                >
+                  Don&apos;t have an account? Join the waitlist.
+                </NextLink>
               </div>
-            )}
-
-            {/* EMAIL FIELD */}
-            <div>
-              <label className="sr-only">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                className="
-                  block w-full rounded-sm
-                  border-0 py-3 px-4
-                  text-white placeholder:text-zinc-600
-                  bg-zinc-900/50
-                  ring-1 ring-inset ring-white/10
-                  focus:ring-1 focus:ring-inset focus:ring-[#9b9898f7]
-                  outline-none transition-shadow duration-200
-                "
-                required
-              />
             </div>
-
-            {/* PASSWORD FIELD */}
-            <div>
-              <label className="sr-only">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="
-                  block w-full rounded-sm
-                  border-0 py-3 px-4
-                  text-white placeholder:text-zinc-600
-                  bg-zinc-900/50
-                  ring-1 ring-inset ring-white/10
-                  focus:ring-1 focus:ring-inset focus:ring-[#9b9898f7]
-                  outline-none transition-shadow duration-200
-                "
-                required
-              />
-            </div>
-
-            {/* ERROR MESSAGE */}
-            {error && (
-              <div className="text-center text-xs text-red-400 tracking-wide uppercase">
-                {error}
-              </div>
-            )}
-
-            {/* SUBMIT BUTTON */}
-            <div>
-              <button
-                type="submit"
-                disabled={processing || (isSigningUp && !suggestedTag)}
-                className={`group relative flex w-full justify-center rounded-sm px-4 py-3 text-sm font-semibold shadow-lg transition-all duration-300 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white
-                  ${
-                    processing || (isSigningUp && !suggestedTag)
-                      ? "opacity-50 cursor-not-allowed bg-zinc-300 text-neutral-700"
-                      : "bg-zinc-300 text-neutral-700 hover:text-black hover:bg-zinc-400"
-                  }
-                `}
-              >
-                {processing
-                  ? isSigningUp
-                    ? "Creating account..."
-                    : "Logging in..."
-                  : isSigningUp
-                  ? "Sign Up"
-                  : "Log In"}
-              </button>
-            </div>
-          </form>
-
-          {/* FOOTER LINKS */}
-          <div className="mt-8 flex flex-col items-center space-y-3 text-sm">
-            {/* Toggle Login/Signup */}
-            {/* <button
-              onClick={() => {
-                setIsSigningUp(!isSigningUp);
-                setError(null);
-                setUsernameBase("");
-              }}
-              className="text-zinc-400 hover:text-white transition-colors duration-200 underline underline-offset-4"
-            >
-              {isSigningUp
-                ? "Already have an account? Log in."
-                : "New here? Create an account."}
-            </button> */}
-
-            {/* Waitlist Link */}
-            <NextLink
-              href="/"
-              className="text-zinc-500 text-xs hover:text-zinc-300 transition-colors duration-200"
-            >
-              Don&apos;t have an account code? Join the waitlist.
-            </NextLink>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
