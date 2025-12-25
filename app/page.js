@@ -1,5 +1,20 @@
-import { redirect } from "next/navigation";
+// import { redirect } from "next/navigation";
+
+// export default function Page() {
+//   redirect("/welcome");
+// }
+
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
-  redirect("/welcome");
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/welcome");
+  }, [router]);
+
+  return null;
 }
