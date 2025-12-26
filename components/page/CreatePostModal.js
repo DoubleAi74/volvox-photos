@@ -10,8 +10,8 @@ import {
   Type,
   File,
   Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
-import { uploadFile } from "@/lib/data";
 import { processImage } from "@/lib/processImage";
 
 import { useAuth } from "@/context/AuthContext";
@@ -27,7 +27,9 @@ const RichTextEditor = dynamic(() => import("./RichTextEditor"), {
 const initialFormData = {
   title: "",
   description: "",
-  thumbnail: "",
+  blurDataURL: "", // Generated client-side (null for HEIC until uploaded)
+  pendingFile: null, // The file waiting to be uploaded
+  needsServerBlur: false, // Flag for HEIC files that need server-side blur
   content_type: "text",
   content: "",
 };
@@ -36,16 +38,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState(initialFormData);
-  const [thumbUploading, setThumbUploading] = useState(false);
-  const [fileUploading, setFileUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // When the modal is opened, reset the form data and uploading statuses
+    // When the modal is opened, reset the form data and states
     if (isOpen) {
       setFormData(initialFormData);
-      setThumbUploading(false);
-      setFileUploading(false);
+      setIsProcessing(false);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -54,22 +54,27 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     e.preventDefault();
     if (isSubmitting) return;
 
-    // 1. Validate
-    if (!formData.thumbnail) return;
+    // Validate: must have a file selected (blur OR needsServerBlur flag)
+    if (!formData.pendingFile) return;
 
     setIsSubmitting(true);
 
-    // 2. Pass data to parent immediately (Fire and Forget)
-    // We do NOT await this. We want the modal to close instantly.
-    onSubmit(formData);
+    // Pass data to parent
+    onSubmit({
+      title: formData.title,
+      description: formData.description,
+      blurDataURL: formData.blurDataURL, // Will be empty for HEIC
+      pendingFile: formData.pendingFile,
+      needsServerBlur: formData.needsServerBlur, // Tell parent this needs server blur
+      content_type: formData.content_type,
+      content: formData.content,
+    });
 
-    // 3. Close the modal internally (visual feedback)
-    // The parent will likely unmount this component anyway via onClose,
-    // but this ensures the loading state doesn't hang if there's a slight delay.
+    // Close the modal immediately
     onClose();
   };
 
-  const handleThumbnailUpload = async (e) => {
+  const handleThumbnailSelect = async (e) => {
     const rawFile = e.target.files[0];
     if (!rawFile) return;
 
@@ -80,31 +85,46 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
       console.error("Error retrieving user ID:", e);
     }
 
-    //console.log(userId);
     if (!userId) return alert("You must be logged in.");
 
-    setThumbUploading(true);
+    setIsProcessing(true);
+
     try {
-      const processedFile = await processImage(rawFile);
-      console.log("file processed for thumbnail", processedFile);
+      // Process image - returns { file, blurDataURL, needsServerBlur }
+      const {
+        file: processedFile,
+        blurDataURL,
+        needsServerBlur,
+      } = await processImage(rawFile);
 
-      const securePath = `users/${userId}/post-thumbnails`;
+      console.log("[CreatePostModal] Image processed:", {
+        hasBlur: !!blurDataURL,
+        needsServerBlur,
+      });
 
-      const file_url = await uploadFile(processedFile, securePath);
-
-      setFormData((prev) => ({ ...prev, thumbnail: file_url }));
+      setFormData((prev) => ({
+        ...prev,
+        blurDataURL: blurDataURL || "",
+        pendingFile: processedFile,
+        needsServerBlur: needsServerBlur,
+      }));
     } catch (error) {
-      console.error("Thumbnail upload failed:", error);
-      alert("Thumbnail upload failed.");
+      console.error("Image processing failed:", error);
+      alert("Failed to process image.");
     }
-    setThumbUploading(false);
+
+    setIsProcessing(false);
   };
 
   if (!isOpen) return null;
 
+  // Button is enabled when we have a file (either with client blur OR flagged for server blur)
+  const hasImage =
+    formData.pendingFile && (formData.blurDataURL || formData.needsServerBlur);
+  const canSubmit = hasImage && !isProcessing && !isSubmitting;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[200] p-4">
-      {/* 1. Add `flex flex-col` to make this a flex container */}
       <div className="bg-neumorphic-bg rounded-2xl shadow-neumorphic p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-6 flex-shrink-0">
           <h2 className="text-xl font-bold text-neumorphic">Create New Post</h2>
@@ -116,10 +136,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
           </button>
         </div>
 
-        {/* 2. We no longer need the form tag to wrap everything */}
-        {/* The form tag will now be inside the scrollable area */}
-
-        {/* 3. This div will be the main scrollable area */}
         <div className="flex-grow overflow-y-auto pr-2">
           <form
             id="create-post-form"
@@ -160,36 +176,55 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
 
             <div>
               <label className="block text-sm font-medium text-neumorphic mb-2">
-                Thumbnail Image (Optional)
+                Thumbnail Image
               </label>
               <div className="flex items-center gap-4">
-                {formData.thumbnail ? (
-                  <div className="w-16 h-16 rounded-lg overflow-hidden shadow-neumorphic-inset">
-                    <ImageWithLoader
-                      src={formData.thumbnail}
-                      alt="Thumbnail Preview"
-                      className="w-full h-full object-cover"
-                    />
+                {formData.pendingFile ? (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden shadow-neumorphic-inset relative">
+                    {formData.blurDataURL ? (
+                      // Show blur preview for regular images
+                      <img
+                        src={formData.blurDataURL}
+                        alt="Thumbnail Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      // Show placeholder for HEIC (no blur yet)
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-neumorphic-bg shadow-neumorphic-inset flex items-center justify-center">
-                    <ImageIcon className="w-6 h-6 text-neumorphic-text" />
+                    {isProcessing ? (
+                      <Loader2 className="w-6 h-6 text-neumorphic-text animate-spin" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-neumorphic-text" />
+                    )}
                   </div>
                 )}
                 <div className="flex-1">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleThumbnailUpload}
+                    onChange={handleThumbnailSelect}
                     className="hidden"
                     id="post-thumbnail-upload"
+                    disabled={isProcessing}
                   />
                   <label
                     htmlFor="post-thumbnail-upload"
-                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg btn-neumorphic shadow-neumorphic text-sm text-neumorphic-text cursor-pointer hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed"
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg btn-neumorphic shadow-neumorphic text-sm text-neumorphic-text cursor-pointer hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed ${
+                      isProcessing ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     <Upload className="w-4 h-4" />
-                    {thumbUploading ? "Uploading..." : "Upload Image"}
+                    {isProcessing
+                      ? "Processing..."
+                      : formData.pendingFile
+                      ? "Change Image"
+                      : "Select Image"}
                   </label>
                 </div>
               </div>
@@ -206,14 +241,9 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
           </button>
           <button
             type="submit"
-            form="create-post-form" // This associates the button with the form
+            form="create-post-form"
             className="flex-1 py-3 rounded-xl btn-neumorphic shadow-neumorphic text-neumorphic-text font-medium disabled:opacity-50"
-            disabled={
-              !formData.thumbnail ||
-              thumbUploading ||
-              fileUploading ||
-              isSubmitting
-            }
+            disabled={!canSubmit}
           >
             {isSubmitting ? "Creating..." : "Create Post"}
           </button>

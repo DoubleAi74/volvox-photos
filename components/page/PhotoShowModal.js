@@ -103,7 +103,7 @@ export default function PhotoShowModal({
               className="relative bg-black select-none flex justify-center items-center overflow-hidden h-[65vh] w-full"
             >
               {/* BLUR PLACEHOLDER */}
-              {post.blurDataURL && (
+              {post.blurDataURL && !isLoaded && (
                 <Image
                   src={post.blurDataURL}
                   alt=""

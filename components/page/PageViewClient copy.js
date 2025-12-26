@@ -194,7 +194,6 @@ export default function PageViewClient({
 
     // Queue the upload + blur fetch (if needed) + create operation
     addToQueue({
-      type: "create",
       actionFn: async () => {
         // Step 1: Upload the file
         const securePath = `users/${currentUser.uid}/post-thumbnails`;

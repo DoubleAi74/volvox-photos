@@ -115,32 +115,32 @@ async function main() {
     }
   }
 
-  // --- PART 2: Generate Blur for Posts ---
-  console.log("-----------------------------------");
-  console.log("🖼️  Checking Blur Placeholders...");
+  // // --- PART 2: Generate Blur for Posts ---
+  // console.log("-----------------------------------");
+  // console.log("🖼️  Checking Blur Placeholders...");
 
-  for (const postDoc of postsSnap.docs) {
-    const post = postDoc.data();
+  // for (const postDoc of postsSnap.docs) {
+  //   const post = postDoc.data();
 
-    // Check: Has thumbnail, but NO blurDataURL
-    if (post.thumbnail) {
-      console.log(`Generating blur for post ${postDoc.id}...`);
-      const blurData = await generateBlurDataURL(post.thumbnail);
+  //   // Check: Has thumbnail, but NO blurDataURL
+  //   if (post.thumbnail) {
+  //     console.log(`Generating blur for post ${postDoc.id}...`);
+  //     const blurData = await generateBlurDataURL(post.thumbnail);
 
-      if (blurData) {
-        const ref = doc(db, "posts", postDoc.id);
+  //     if (blurData) {
+  //       const ref = doc(db, "posts", postDoc.id);
 
-        // This overwrites the existing value
-        batch.update(ref, { blurDataURL: blurData });
+  //       // This overwrites the existing value
+  //       batch.update(ref, { blurDataURL: blurData });
 
-        opCount++;
-        console.log(`  > Success`);
+  //       opCount++;
+  //       console.log(`  > Success`);
 
-        // Committing frequently to save progress
-        if (opCount >= 490) await commitBatch();
-      }
-    }
-  }
+  //       // Committing frequently to save progress
+  //       if (opCount >= 490) await commitBatch();
+  //     }
+  //   }
+  // }
 
   await commitBatch();
   console.log("✅ Done!");
