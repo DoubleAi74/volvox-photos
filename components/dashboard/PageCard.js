@@ -21,7 +21,7 @@ export default function PageCard({
     <div className="group relative">
       <Link href={`/${usernameTag}/${page.slug}`} prefetch>
         {/* ... (The inner content of the link is unchanged) ... */}
-        <div className="p-2 rounded-md bg-[#f7f3ed] shadow-md hover:shadow-neumorphic-soft transition-all duration-300  h-full mb-[-10px] cursor-pointer">
+        <div className="p-2 rounded-md bg-[#f7f6f3]/50 shadow-md hover:shadow-neumorphic-soft transition-all duration-300  h-full mb-[-10px] cursor-pointer">
           {page.thumbnail ? (
             <div
               className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
@@ -44,7 +44,7 @@ export default function PageCard({
               />
             </div>
           ) : (
-            <div className="w-full aspect-[4/3] shadow-md mb-1 rounded-sm bg-neumorphic-bg flex items-center justify-center">
+            <div className="w-full aspect-[4/3] shadow-md mb-1 rounded-sm bg-zinc-200/50 flex items-center justify-center">
               <FileText className="w-8 h-8 text-neumorphic-text" />
             </div>
           )}

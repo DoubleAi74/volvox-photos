@@ -13,7 +13,7 @@ export default function ActionButton({
       title={title}
       className={`
         flex items-center gap-2
-        h-[44px] px-4
+        h-[40px] px-4
         rounded-sm
         text-sm
         backdrop-blur-[1px]

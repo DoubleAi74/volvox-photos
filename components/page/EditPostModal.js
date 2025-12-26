@@ -55,30 +55,24 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
     }
   }, [post]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     const dataToSend = {
       ...formData,
       order_index: Number(formData.order_index) || 0,
     };
-    // setIsSubmitting(true);
-    // onSubmit(dataToSend);
-    // setIsSubmitting(false);
 
-    setIsSubmitting(true); // Disable the button immediately
-    try {
-      // The parent component's onSubmit function is now awaited
-      await onSubmit(dataToSend);
-    } catch (error) {
-      console.error("Submission failed:", error);
-      // Optionally show an error alert to the user
-      alert("Failed to create post. Please try again.");
-    } finally {
-      // This block runs whether the submission succeeded or failed
-      // Re-enable the button for future attempts (e.g., if there was an error)
-      setIsSubmitting(false);
-    }
+    setIsSubmitting(true);
+
+    // 1. Pass data to parent immediately (Fire and Forget)
+    onSubmit(dataToSend);
+
+    // 2. Close modal immediately
+    onClose();
+
+    // Note: We don't reset 'isSubmitting' here because the component will unmount.
   };
 
   const handleThumbnailUpload = async (e) => {

@@ -50,31 +50,23 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     }
   }, [isOpen]);
 
-  const handleSubmit = async (e) => {
-    console.log("Submitting form");
-    // Make this function async
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Prevent function from running again if it's already submitting
     if (isSubmitting) return;
 
-    let postData = { ...formData };
+    // 1. Validate
+    if (!formData.thumbnail) return;
 
-    setFormData(postData);
+    setIsSubmitting(true);
 
-    setIsSubmitting(true); // Disable the button immediately
-    try {
-      // The parent component's onSubmit function is now awaited
-      await onSubmit(postData);
-    } catch (error) {
-      console.error("Submission failed:", error);
-      // Optionally show an error alert to the user
-      alert("Failed to create post. Please try again.");
-    } finally {
-      // This block runs whether the submission succeeded or failed
-      // Re-enable the button for future attempts (e.g., if there was an error)
-      setIsSubmitting(false);
-    }
+    // 2. Pass data to parent immediately (Fire and Forget)
+    // We do NOT await this. We want the modal to close instantly.
+    onSubmit(formData);
+
+    // 3. Close the modal internally (visual feedback)
+    // The parent will likely unmount this component anyway via onClose,
+    // but this ensures the loading state doesn't hang if there's a slight delay.
+    onClose();
   };
 
   const handleThumbnailUpload = async (e) => {
@@ -136,7 +128,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
           >
             <div>
               <label className="block text-sm font-medium text-neumorphic mb-2">
-                Post Title *
+                Post Title
               </label>
               <input
                 type="text"
@@ -146,7 +138,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
                 }
                 className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text/70 focus:outline-none"
                 placeholder="Enter post title"
-                required
               />
             </div>
             <div>
@@ -218,7 +209,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
             form="create-post-form" // This associates the button with the form
             className="flex-1 py-3 rounded-xl btn-neumorphic shadow-neumorphic text-neumorphic-text font-medium disabled:opacity-50"
             disabled={
-              !formData.title.trim() ||
               !formData.thumbnail ||
               thumbUploading ||
               fileUploading ||
