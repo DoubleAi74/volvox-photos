@@ -1,53 +1,48 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic"; // 1. Import dynamic
-import { X, Upload, Link as LinkIcon, Type, File } from "lucide-react";
+import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import ImageWithLoader from "@/components/ImageWithLoader";
-
-import { uploadFile } from "@/lib/data";
 import { processImage } from "@/lib/processImage";
-
 import { useAuth } from "@/context/AuthContext";
-
-// 2. Use dynamic import to load the editor only on the client-side
-const RichTextEditor = dynamic(() => import("./RichTextEditor"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[150px] rounded-xl bg-neumorphic-bg shadow-neumorphic-inset animate-pulse"></div>
-  ),
-});
 
 const initialFormData = {
   title: "",
   description: "",
   thumbnail: "",
+  blurDataURL: "",
+  pendingFile: null,
+  needsServerBlur: false,
+  content_type: "text",
+  content: "",
   order_index: 0,
 };
+
 export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState(initialFormData);
-
-  const [thumbUploading, setThumbUploading] = useState(false);
-
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset form when modal opens
   useEffect(() => {
-    // When the modal is opened, reset the form data and uploading statuses
     if (isOpen) {
-      setFormData(initialFormData);
-      setThumbUploading(false);
+      setIsProcessing(false);
       setIsSubmitting(false);
     }
   }, [isOpen]);
 
+  // Populate form when post changes
   useEffect(() => {
     if (post) {
       setFormData({
         title: post.title || "",
         description: post.description || "",
         thumbnail: post.thumbnail || "",
+        blurDataURL: post.blurDataURL || "",
+        pendingFile: null,
+        needsServerBlur: false,
         content_type: post.content_type || "text",
         content: post.content || "",
         order_index: post.order_index || 0,
@@ -59,99 +54,90 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
     e.preventDefault();
     if (isSubmitting) return;
 
-    const dataToSend = {
-      ...formData,
-      order_index: Number(formData.order_index) || 0,
-    };
-
     setIsSubmitting(true);
 
-    // 1. Pass data to parent immediately (Fire and Forget)
-    onSubmit(dataToSend);
+    onSubmit({
+      title: formData.title,
+      description: formData.description,
+      thumbnail: formData.thumbnail,
+      blurDataURL: formData.blurDataURL,
+      pendingFile: formData.pendingFile,
+      needsServerBlur: formData.needsServerBlur,
+      content_type: formData.content_type,
+      content: formData.content,
+      order_index: Number(formData.order_index) || 0,
+    });
 
-    // 2. Close modal immediately
     onClose();
-
-    // Note: We don't reset 'isSubmitting' here because the component will unmount.
   };
 
-  const handleThumbnailUpload = async (e) => {
+  const handleThumbnailSelect = async (e) => {
     const rawFile = e.target.files[0];
     if (!rawFile) return;
 
     const userId = user?.uid;
     if (!userId) return alert("You must be logged in.");
 
-    setThumbUploading(true);
+    setIsProcessing(true);
+
     try {
-      const processedFile = await processImage(rawFile);
+      const {
+        file: processedFile,
+        blurDataURL,
+        needsServerBlur,
+      } = await processImage(rawFile);
 
-      const securePath = `users/${userId}/post-thumbnails`;
-      const file_url = await uploadFile(processedFile, securePath);
-      setFormData((prev) => ({ ...prev, thumbnail: file_url }));
+      console.log("[EditPostModal] Image processed:", {
+        hasBlur: !!blurDataURL,
+        needsServerBlur,
+      });
+
+      setFormData((prev) => ({
+        ...prev,
+        blurDataURL: blurDataURL || "",
+        pendingFile: processedFile,
+        needsServerBlur: needsServerBlur,
+        thumbnail: "", // Clear old thumbnail URL since we have a new pending file
+      }));
     } catch (error) {
-      console.error("Thumbnail upload failed:", error);
+      console.error("Image processing failed:", error);
+      alert("Failed to process image.");
     }
-    setThumbUploading(false);
-  };
 
-  // const handleFileUpload = async (e) => {
-  //   const file = e.target.files[0];
-  //   if (!file) return;
-
-  //   setFileUploading(true);
-  //   try {
-  //     const file_url = await uploadFile(file, "post-content-files");
-  //     setFormData((prev) => ({ ...prev, content: file_url }));
-  //   } catch (error) {
-  //     console.error("Content file upload failed:", error);
-  //   }
-  //   setFileUploading(false);
-  // };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const userId = user?.uid;
-    if (!userId) return alert("You must be logged in.");
-
-    setFileUploading(true);
-    try {
-      // CHANGE 2
-      const securePath = `users/${userId}/post-content-files`;
-      const file_url = await uploadFile(file, securePath);
-      setFormData((prev) => ({ ...prev, content: file_url }));
-    } catch (error) {
-      console.error("Content file upload failed:", error);
-    }
-    setFileUploading(false);
+    setIsProcessing(false);
   };
 
   if (!isOpen || !post) return null;
 
+  // Determine what to show for thumbnail preview
+  const hasNewPendingFile = !!formData.pendingFile;
+  const hasExistingThumbnail = !!formData.thumbnail;
+  const hasBlurPreview = !!formData.blurDataURL;
+
+  const canSubmit = !isProcessing && !isSubmitting;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[200] p-4">
-      {/* 1. Add `flex flex-col` */}
       <div className="bg-neumorphic-bg rounded-2xl shadow-neumorphic p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-6 flex-shrink-0">
           <h2 className="text-xl font-bold text-neumorphic">Edit Post</h2>
-          <button onClick={onClose} /* ... */>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg btn-neumorphic shadow-neumorphic hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed"
+          >
             <X className="w-5 h-5 text-neumorphic-text" />
           </button>
         </div>
 
-        {/* 2. Main scrollable area */}
         <div className="flex-grow overflow-y-auto pr-2">
           <form
             id="edit-post-form"
             onSubmit={handleSubmit}
             className="space-y-6"
           >
-            {/* ... all your other form fields are correct ... */}
             <div>
               <label className="block text-sm font-medium text-neumorphic mb-2">
-                Post Title *
+                Post Title
               </label>
               <input
                 type="text"
@@ -159,11 +145,11 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, title: e.target.value }))
                 }
-                className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text focus:outline-none"
+                className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text/70 focus:outline-none"
                 placeholder="Enter post title"
-                required
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-neumorphic mb-2">
                 Description
@@ -176,11 +162,12 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
                     description: e.target.value,
                   }))
                 }
-                className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text focus:outline-none resize-none"
+                className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text/70 focus:outline-none resize-none"
                 placeholder="Enter post description"
                 rows="2"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-neumorphic mb-2">
                 Order Index
@@ -196,7 +183,7 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
                     order_index: value === "" ? "" : parseInt(value, 10),
                   }));
                 }}
-                className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text focus:outline-none"
+                className="w-full px-4 py-3 rounded-xl bg-neumorphic-bg shadow-neumorphic-inset text-neumorphic-text placeholder-neumorphic-text/70 focus:outline-none"
               />
             </div>
 
@@ -205,7 +192,25 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
                 Thumbnail Image
               </label>
               <div className="flex items-center gap-4">
-                {formData.thumbnail ? (
+                {/* Thumbnail Preview */}
+                {hasNewPendingFile ? (
+                  // New file selected - show blur preview or placeholder
+                  <div className="w-16 h-16 rounded-lg overflow-hidden shadow-neumorphic-inset relative">
+                    {hasBlurPreview ? (
+                      <img
+                        src={formData.blurDataURL}
+                        alt="New Thumbnail Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      // HEIC file - no blur yet
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                ) : hasExistingThumbnail ? (
+                  // Existing thumbnail from server
                   <div className="w-16 h-16 rounded-lg overflow-hidden shadow-neumorphic-inset">
                     <ImageWithLoader
                       src={formData.thumbnail}
@@ -214,32 +219,51 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
                     />
                   </div>
                 ) : (
+                  // No thumbnail
                   <div className="w-16 h-16 rounded-lg bg-neumorphic-bg shadow-neumorphic-inset flex items-center justify-center">
-                    <Upload className="w-6 h-6 text-neumorphic-text" />
+                    {isProcessing ? (
+                      <Loader2 className="w-6 h-6 text-neumorphic-text animate-spin" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-neumorphic-text" />
+                    )}
                   </div>
                 )}
+
                 <div className="flex-1">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleThumbnailUpload}
+                    onChange={handleThumbnailSelect}
                     className="hidden"
                     id="edit-thumbnail-upload"
+                    disabled={isProcessing}
                   />
                   <label
                     htmlFor="edit-thumbnail-upload"
-                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg btn-neumorphic shadow-neumorphic text-sm text-neumorphic-text cursor-pointer hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed"
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg btn-neumorphic shadow-neumorphic text-sm text-neumorphic-text cursor-pointer hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed ${
+                      isProcessing ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     <Upload className="w-4 h-4" />
-                    {thumbUploading ? "Uploading..." : "Change Thumbnail"}
+                    {isProcessing
+                      ? "Processing..."
+                      : hasNewPendingFile || hasExistingThumbnail
+                      ? "Change Image"
+                      : "Select Image"}
                   </label>
                 </div>
               </div>
+
+              {/* Indicator for pending upload */}
+              {hasNewPendingFile && (
+                <p className="text-xs text-neumorphic-text/70 mt-2">
+                  New image selected. It will be uploaded when you save.
+                </p>
+              )}
             </div>
           </form>
         </div>
 
-        {/* 3. Sticky action buttons */}
         <div className="flex gap-4 pt-4 mt-auto flex-shrink-0 border-t border-neumorphic-shadow-dark/20">
           <button
             type="button"
@@ -250,9 +274,9 @@ export default function EditPostModal({ isOpen, post, onClose, onSubmit }) {
           </button>
           <button
             type="submit"
-            form="edit-post-form" // This associates the button with the form
+            form="edit-post-form"
             className="flex-1 py-3 rounded-xl btn-neumorphic shadow-neumorphic text-neumorphic-text font-medium disabled:opacity-50"
-            disabled={thumbUploading || isSubmitting}
+            disabled={!canSubmit}
           >
             {isSubmitting ? "Updating..." : "Update Post"}
           </button>

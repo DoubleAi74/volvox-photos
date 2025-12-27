@@ -254,10 +254,15 @@ export default function PageViewClient({
 
     const previousPosts = [...posts];
 
+    // Optimistic update (show blur preview if available)
     const optimisticPost = {
       ...editingPost,
-      ...postData,
+      title: postData.title,
+      description: postData.description,
+      blurDataURL: postData.blurDataURL || editingPost.blurDataURL,
+      order_index: postData.order_index,
       isOptimistic: true,
+      isUploadingHeic: postData.needsServerBlur && postData.pendingFile,
     };
 
     setPosts((currentPosts) => {
@@ -271,7 +276,46 @@ export default function PageViewClient({
 
     addToQueue({
       actionFn: async () => {
-        await updatePost(targetId, postData, previousPosts);
+        let thumbnailUrl = postData.thumbnail; // Keep existing if no new file
+        let blurDataURL = postData.blurDataURL;
+
+        // If there's a new image to upload
+        if (postData.pendingFile) {
+          const securePath = `users/${currentUser.uid}/post-thumbnails`;
+          thumbnailUrl = await uploadFile(postData.pendingFile, securePath);
+
+          if (postData.needsServerBlur) {
+            blurDataURL = await fetchServerBlur(thumbnailUrl);
+          }
+
+          // Update optimistic post with real thumbnail
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === targetId
+                ? {
+                    ...p,
+                    thumbnail: thumbnailUrl,
+                    blurDataURL: blurDataURL || "",
+                    isUploadingHeic: false,
+                  }
+                : p
+            )
+          );
+        }
+
+        await updatePost(
+          targetId,
+          {
+            title: postData.title,
+            description: postData.description,
+            thumbnail: thumbnailUrl,
+            blurDataURL: blurDataURL || "",
+            content_type: postData.content_type,
+            content: postData.content,
+            order_index: postData.order_index,
+          },
+          previousPosts
+        );
       },
       onRollback: () => {
         setPosts(previousPosts);

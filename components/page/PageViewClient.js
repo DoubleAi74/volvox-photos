@@ -255,10 +255,15 @@ export default function PageViewClient({
 
     const previousPosts = [...posts];
 
+    // Optimistic update (show blur preview if available)
     const optimisticPost = {
       ...editingPost,
-      ...postData,
+      title: postData.title,
+      description: postData.description,
+      blurDataURL: postData.blurDataURL || editingPost.blurDataURL,
+      order_index: postData.order_index,
       isOptimistic: true,
+      isUploadingHeic: postData.needsServerBlur && postData.pendingFile,
     };
 
     setPosts((currentPosts) => {
@@ -272,7 +277,45 @@ export default function PageViewClient({
 
     addToQueue({
       actionFn: async () => {
-        await updatePost(targetId, postData, previousPosts);
+        let thumbnailUrl = postData.thumbnail;
+        let blurDataURL = postData.blurDataURL;
+
+        // If there's a new image to upload
+        if (postData.pendingFile) {
+          const securePath = `users/${currentUser.uid}/post-thumbnails`;
+          thumbnailUrl = await uploadFile(postData.pendingFile, securePath);
+
+          if (postData.needsServerBlur) {
+            blurDataURL = await fetchServerBlur(thumbnailUrl);
+          }
+
+          // Update optimistic post with real thumbnail
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === targetId
+                ? {
+                    ...p,
+                    thumbnail: thumbnailUrl,
+                    blurDataURL: blurDataURL || "",
+                    isUploadingHeic: false,
+                  }
+                : p
+            )
+          );
+        }
+
+        // IMPORTANT: Remove non-serializable fields before sending to Firestore
+        const { pendingFile, needsServerBlur, ...cleanPostData } = postData;
+
+        await updatePost(
+          targetId,
+          {
+            ...cleanPostData,
+            thumbnail: thumbnailUrl,
+            blurDataURL: blurDataURL || "",
+          },
+          previousPosts
+        );
       },
       onRollback: () => {
         setPosts(previousPosts);
