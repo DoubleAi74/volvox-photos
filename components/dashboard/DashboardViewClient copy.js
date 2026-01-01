@@ -1,4 +1,4 @@
-// components/dashboard/DashboardClient.js
+// components/dashboard/DashboardViewClient.js
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -28,7 +28,7 @@ const PageSkeleton = () => (
   <div className="w-full h-48 bg-gray-200/50 rounded-xl animate-pulse shadow-sm" />
 );
 
-export default function DashboardClient({
+export default function DashboardViewClient({
   profileUser, // Data passed from server
   initialPages, // Data passed from server
 }) {

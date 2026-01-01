@@ -27,7 +27,7 @@ import { hexToRgba } from "@/components/dashboard/DashHeader";
 import { useTheme } from "@/context/ThemeContext";
 import ActionButton from "@/components/ActionButton";
 
-import { usePostQueue } from "@/lib/usePostQueue";
+import { useQueue } from "@/lib/useQueue";
 
 const PostSkeleton = () => (
   <div className="w-full aspect-square bg-gray-200/50 rounded-xl animate-pulse shadow-sm" />
@@ -57,7 +57,7 @@ export default function PageViewClient({
     }
   }, [page?.id]);
 
-  const { addToQueue, isSyncing } = usePostQueue(handleQueueEmpty);
+  const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
 
   const postsRef = useRef(initialPosts);
   useEffect(() => {
@@ -485,7 +485,6 @@ export default function PageViewClient({
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onSubmit={handleCreatePost}
-                lotusThumb={pageSlug === "meditations"}
               />
               <EditPostModal
                 isOpen={!!editingPost}

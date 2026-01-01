@@ -7,7 +7,7 @@ import {
   fetchHex,
   fetchUserDashboard,
 } from "@/lib/data";
-import DashboardClient from "@/components/dashboard/DashboardClient";
+import DashboardViewClient from "@/components/dashboard/DashboardViewClient";
 
 export default async function Page({ params }) {
   const resolvedParams = await params;
@@ -57,6 +57,9 @@ export default async function Page({ params }) {
 
   // Pass everything to the client component
   return (
-    <DashboardClient profileUser={profileUser} initialPages={initialPages} />
+    <DashboardViewClient
+      profileUser={profileUser}
+      initialPages={initialPages}
+    />
   );
 }
