@@ -42,6 +42,7 @@ function DashHeaderInner(
     setDashHex,
     backHex,
     setBackHex,
+    isSyncing = false,
   },
   ref
 ) {
@@ -197,13 +198,22 @@ function DashHeaderInner(
               heightShort ? "min-h-[20px]" : "min-h-[80px] sm:min-h-[100px]"
             }`}
           >
-            <div className="flex gap-1 min-w-0 flex-1 items-center">
+            <div className="flex gap-1 min-w-0 flex-1 items-center relative">
               <h1
                 className="text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow pr-4 pl-6 sm:pl-8 break-words leading-tight"
                 style={{ color: lighten(dashHex, 230) }}
               >
                 {tempTitleText}
               </h1>
+
+              {isSyncing && !heightShort && (
+                <span
+                  className="text-xs ml-2 opacity-70 font-normal"
+                  style={{ color: lighten(dashHex, 200) }}
+                >
+                  Saving changes...
+                </span>
+              )}
 
               {editTitleOn && (
                 <div className="relative inline-flex items-center shrink-0">

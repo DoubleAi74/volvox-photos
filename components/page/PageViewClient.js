@@ -98,6 +98,7 @@ export default function PageViewClient({
       : profileUser?.dashboard?.backHex || "#ffffff";
 
   useEffect(() => {
+    /// IMPORTANT
     const serverIds = new Set(initialPosts.map((p) => p.id));
     deletedIdsRef.current.forEach((id) => {
       if (!serverIds.has(id)) {

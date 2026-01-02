@@ -1,7 +1,7 @@
 // components/dashboard/DashboardViewClient.js
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import DashHeader from "@/components/dashboard/DashHeader";
 import DashboardInfoEditor from "@/components/dashboard/DashboardInfoEditor";
 import { useAuth } from "@/context/AuthContext";
@@ -16,13 +16,17 @@ import { useTheme } from "@/context/ThemeContext";
 
 import ActionButton from "@/components/ActionButton";
 
+import { useQueue } from "@/lib/useQueue";
+
 import {
   createPage,
   deletePage,
-  getPages,
   updatePage,
+  uploadFile,
   updateUserColours,
+  reindexPages,
 } from "@/lib/data";
+import { fetchServerBlur } from "@/lib/processImage";
 
 const PageSkeleton = () => (
   <div className="w-full h-48 bg-gray-200/50 rounded-xl animate-pulse shadow-sm" />
@@ -41,6 +45,41 @@ export default function DashboardViewClient({
   const pathname = usePathname();
 
   const [pages, setPages] = useState(initialPages);
+
+  ////// New
+
+  // const handleQueueEmpty = useCallback(async () => {
+  //   console.log("Queue is empty, reindexing pages...");
+  //   if (currentUser?.uid) {
+  //     console.log("Reindexing pages...");
+  //     await reindexPages(currentUser.uid);
+  //   }
+  // }, [currentUser?.uid]);
+
+  const handleQueueEmpty = useCallback(async () => {
+    console.log("Queue is empty, reindexing pages...");
+    if (pagesRef.current?.length) {
+      await reindexPages(pagesRef.current);
+    }
+  }, []);
+
+  const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
+
+  const pagesRef = useRef(initialPages);
+  useEffect(() => {
+    pagesRef.current = pages;
+    console.log("Pages ref updated:", pagesRef.current);
+    const currentList = pagesRef.current;
+    const maxOrder =
+      currentList.length > 0
+        ? Math.max(...currentList.map((p) => p.order_index || 0))
+        : 0;
+    console.log("Max order index:", maxOrder);
+  }, [pages]);
+
+  const deletedIdsRef = useRef(new Set());
+
+  ///// ^ new
 
   const [loading, setLoading] = useState(false);
 
@@ -109,36 +148,147 @@ export default function DashboardViewClient({
     setEditOn(searchParams.has("edit"));
   }, [searchParams]);
 
-  // A. Auth-dependent re-fetch
-  useEffect(() => {
-    if (isOwner && profileUser) {
-      const fetchPrivatePages = async () => {
-        try {
-          const privatePages = await getPages(profileUser.uid, true);
-          setPages(privatePages);
-        } catch (e) {
-          console.error("Failed to fetch private pages:", e);
-        }
-      };
-      fetchPrivatePages();
-    }
-  }, [isOwner, profileUser?.uid]);
+  // REMOVED: Auth-dependent re-fetch was causing phantom page behavior
+  // The server component already passes initialPages with correct auth context
+  // Adding a client-side fetch here causes race conditions with optimistic updates
 
   // ------------------------------------------------------------------
   // ACTION HANDLERS
   // ------------------------------------------------------------------
 
-  const refreshPages = useCallback(async () => {
-    setLoading(true);
-    const userPages = await getPages(profileUser.uid, isOwner);
-    setPages(userPages);
-    setLoading(false);
-    router.refresh();
-  }, [isOwner, profileUser?.uid, router]);
+  //  useEffect(() => {
+  //   /// IMPORTANT — reconcile server pages with optimistic local state
 
-  const handleHeaderColorChange = (newHex) => {
-    setHeaderColor(newHex);
-  };
+  //   // 1. Build a set of server-known page IDs
+  //   const serverIds = new Set(initialPages.map((p) => p.id));
+
+  //   // 2. Clean up deleted IDs that the server no longer knows about
+  //   deletedIdsRef.current.forEach((id) => {
+  //     if (!serverIds.has(id)) {
+  //       deletedIdsRef.current.delete(id);
+  //     }
+  //   });
+
+  //   setPages((currentLocalPages) => {
+  //     // 3. Remove locally-deleted pages from server data
+  //     const validServerPages = initialPages.filter(
+  //       (p) => !deletedIdsRef.current.has(p.id)
+  //     );
+
+  //     // 4. Extract optimistic pages (new / editing / reordering)
+  //     const optimisticPages = currentLocalPages.filter((p) => p.isOptimistic);
+
+  //     // 5. Index server pages by clientId (optimistic → canonical bridge)
+  //     const serverPagesByClientId = new Map();
+  //     validServerPages.forEach((p) => {
+  //       if (p.clientId) {
+  //         serverPagesByClientId.set(p.clientId, p);
+  //       }
+  //     });
+
+  //     // 6. Prefer server versions over optimistic ones when matched
+  //     const merged = validServerPages.map((serverPage) => {
+  //       const matchingOptimistic = optimisticPages.find(
+  //         (opt) => opt.clientId && opt.clientId === serverPage.clientId
+  //       );
+
+  //       // If server version exists, always prefer it
+  //       if (matchingOptimistic) {
+  //         return serverPage;
+  //       }
+
+  //       return serverPage;
+  //     });
+
+  //     // 7. Keep optimistic pages that don’t have a server version yet
+  //     optimisticPages.forEach((optPage) => {
+  //       const hasServerVersion =
+  //         optPage.clientId && serverPagesByClientId.has(optPage.clientId);
+  //       const existsById = merged.some((p) => p.id === optPage.id);
+
+  //       if (!hasServerVersion && !existsById) {
+  //         merged.push(optPage);
+  //       }
+  //     });
+
+  //     // 8. Enforce stable ordering
+  //     return merged.sort(
+  //       (a, b) => (a.order_index || 0) - (b.order_index || 0)
+  //     );
+  //   });
+  // }, [initialPages]);
+
+  // SAME I THINK
+  useEffect(() => {
+    /// IMPORTANT: Reconcile server pages with optimistic local state
+    const serverIds = new Set(initialPages.map((p) => p.id));
+
+    // Clean up deleted IDs that the server no longer knows about
+    deletedIdsRef.current.forEach((id) => {
+      if (!serverIds.has(id)) {
+        deletedIdsRef.current.delete(id);
+      }
+    });
+
+    setPages((currentLocalPages) => {
+      // 1. Filter out deleted pages from server data
+      const validServerPages = initialPages.filter(
+        (p) => !deletedIdsRef.current.has(p.id)
+      );
+
+      // 2. Extract optimistic pages (new/editing/reordering)
+      const optimisticPages = currentLocalPages.filter((p) => p.isOptimistic);
+
+      // 3. Index server pages by clientId for reconciliation
+      const serverPagesByClientId = new Map();
+      validServerPages.forEach((p) => {
+        if (p.clientId) {
+          serverPagesByClientId.set(p.clientId, p);
+        }
+      });
+
+      // 4. Build merged list - prefer server versions when they exist
+      const merged = [];
+      const addedClientIds = new Set();
+      const addedIds = new Set();
+
+      // Add all server pages (these are the source of truth)
+      validServerPages.forEach((serverPage) => {
+        merged.push(serverPage);
+        if (serverPage.clientId) {
+          addedClientIds.add(serverPage.clientId);
+        }
+        addedIds.add(serverPage.id);
+      });
+
+      // 5. Add optimistic pages that haven't been confirmed by server yet
+      optimisticPages.forEach((optPage) => {
+        const hasServerVersion =
+          optPage.clientId && addedClientIds.has(optPage.clientId);
+        const existsById = addedIds.has(optPage.id);
+
+        // Only add if server doesn't have this page yet
+        if (!hasServerVersion && !existsById) {
+          merged.push(optPage);
+        }
+      });
+
+      // 6. Sort by order_index for stable display
+      return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    });
+  }, [initialPages]);
+
+  // const refreshPages = useCallback(async () => {
+  //   setLoading(true);
+  //   const userPages = await getPages(profileUser.uid, isOwner);
+  //   setPages(userPages);
+  //   setLoading(false);
+  //   router.refresh();
+  // }, [isOwner, profileUser?.uid, router]);
+
+  // const handleHeaderColorChange = (newHex) => {
+  //   setHeaderColor(newHex);
+  // };
 
   const handleLogout = async () => {
     try {
@@ -176,51 +326,226 @@ export default function DashboardViewClient({
 
   const handleCreatePage = async (pageData) => {
     if (!isOwner || !profileUser) return;
-    try {
-      const maxOrder =
-        pages.length > 0
-          ? Math.max(...pages.map((p) => p.order_index || 0))
-          : 0;
 
-      await createPage(
-        { ...pageData, order_index: maxOrder + 1 },
-        profileUser.uid
-      );
-      setShowCreateModal(false);
-      await refreshPages();
-    } catch (error) {
-      console.error("Failed to create page:", error);
-      alert("Failed to create page.");
-    }
+    setShowCreateModal(false);
+
+    const clientId = crypto.randomUUID();
+    const tempId = `temp-${Date.now()}`;
+
+    const currentList = pagesRef.current;
+
+    const maxOrder =
+      currentList.length > 0
+        ? Math.max(...currentList.map((p) => p.order_index || 0))
+        : 0;
+    const newOrderIndex = maxOrder + 1;
+
+    // Generate a temporary slug for the optimistic page (will be replaced with real one from server)
+    const tempSlug = `temp-${pageData.title
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]+/g, "")
+      .replace(/--+/g, "-")}-${Date.now()}`;
+
+    // Optimistic page - shows blur if available, otherwise shows as "uploading"
+    const optimisticPage = {
+      id: tempId,
+      title: pageData.title,
+      description: pageData.description,
+      thumbnail: "", // Empty until upload completes
+      blurDataURL: pageData.blurDataURL || "", // Empty for HEIC
+      userId: currentUser.uid, // IMPORTANT: Must be uid string, not user object
+      slug: tempSlug, // Temporary slug for PageCard link
+      order_index: newOrderIndex,
+      created_date: new Date(),
+      isOptimistic: true,
+      clientId: clientId,
+      isPrivate: pageData.isPrivate || false,
+      isPublic: pageData.isPublic || false,
+      isUploadingHeic: pageData.needsServerBlur, // Flag for PageCard to show special state
+    };
+
+    // Update ref and state immediately
+    pagesRef.current = [...currentList, optimisticPage];
+    setPages(pagesRef.current);
+
+    // Queue the upload + blur fetch (if needed) + create operation
+    addToQueue({
+      type: "create",
+      actionFn: async () => {
+        // Step 1: Upload the file
+        const securePath = `users/${currentUser.uid}/page-thumbnails`;
+        const thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
+        console.log("[handleCreatePage] Upload complete:", thumbnailUrl);
+
+        // Step 2: Get blur (either from postData or fetch from server for HEIC)
+        let blurDataURL = pageData.blurDataURL;
+
+        if (pageData.needsServerBlur) {
+          console.log("[handleCreatePage] Fetching server blur for HEIC...");
+
+          // Update optimistic page to show blur is being generated
+          setPages((prev) =>
+            prev.map((p) =>
+              p.id === tempId
+                ? { ...p, thumbnail: thumbnailUrl, isUploadingHeic: false }
+                : p
+            )
+          );
+
+          blurDataURL = await fetchServerBlur(thumbnailUrl);
+          console.log("[handleCreatePage] Server blur fetched");
+
+          // Update optimistic post with blur
+          setPages((prev) =>
+            prev.map((p) =>
+              p.id === tempId ? { ...p, blurDataURL: blurDataURL || "" } : p
+            )
+          );
+        }
+
+        // Step 3: Create the page in database
+        await createPage({
+          title: pageData.title,
+          description: pageData.description,
+          thumbnail: thumbnailUrl,
+          blurDataURL: blurDataURL || "",
+          userId: currentUser.uid,
+          order_index: newOrderIndex,
+          clientId: clientId,
+          isPrivate: pageData.isPrivate || false,
+          isPublic: pageData.isPublic || false,
+        });
+      },
+      onRollback: () => {
+        setPages((prev) => prev.filter((p) => p.id !== tempId));
+        alert("Failed to create page.");
+      },
+    });
   };
 
   const handleEditPage = async (pageData) => {
-    if (!isOwner || !editingPage || !profileUser) return;
-    try {
-      await updatePage(editingPage.id, pageData, pages);
-      setEditingPage(null);
-      await refreshPages();
-    } catch (error) {
-      console.error("Failed to update page:", error);
-      alert("Failed to update page.");
-    }
+    if (!isOwner || !editingPage) return;
+
+    const targetId = editingPage.id;
+    setEditingPage(null);
+
+    const previousPages = [...pages];
+
+    // Optimistic update (show blur preview if available)
+    const optimisticPage = {
+      ...editingPage,
+      title: pageData.title,
+      description: pageData.description,
+      blurDataURL: pageData.blurDataURL || editingPage.blurDataURL,
+      order_index: pageData.order_index,
+      isPrivate: pageData.isPrivate,
+      isPublic: pageData.isPublic,
+      isOptimistic: true,
+      isUploadingHeic: pageData.needsServerBlur && pageData.pendingFile,
+    };
+
+    setPages((currentPages) => {
+      const updatedList = currentPages.map((p) =>
+        p.id === targetId ? optimisticPage : p
+      );
+      return updatedList.sort(
+        (a, b) => (a.order_index || 0) - (b.order_index || 0)
+      );
+    });
+
+    addToQueue({
+      actionFn: async () => {
+        let thumbnailUrl = pageData.thumbnail;
+        let blurDataURL = pageData.blurDataURL;
+
+        // If there's a new image to upload
+        if (pageData.pendingFile) {
+          const securePath = `users/${currentUser.uid}/page-thumbnails`;
+          thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
+
+          if (pageData.needsServerBlur) {
+            blurDataURL = await fetchServerBlur(thumbnailUrl);
+          }
+
+          // Update optimistic page with real thumbnail
+          setPages((prev) =>
+            prev.map((p) =>
+              p.id === targetId
+                ? {
+                    ...p,
+                    thumbnail: thumbnailUrl,
+                    blurDataURL: blurDataURL || "",
+                    isUploadingHeic: false,
+                  }
+                : p
+            )
+          );
+        }
+
+        // IMPORTANT: Remove non-serializable fields before sending to Firestore
+        const { pendingFile, needsServerBlur, ...cleanPageData } = pageData;
+
+        await updatePage(
+          targetId,
+          {
+            ...cleanPageData,
+            thumbnail: thumbnailUrl,
+            blurDataURL: blurDataURL || "",
+          },
+          previousPages
+        );
+      },
+      onRollback: () => {
+        setPages(previousPages);
+        alert("Failed to update page.");
+      },
+    });
   };
 
   const handleDeletePage = async (pageData) => {
     if (!isOwner || !profileUser) return;
+
     if (
-      confirm(
+      !confirm(
         "Are you sure you want to delete this page? This cannot be undone."
       )
     ) {
-      try {
-        await deletePage(pages, pageData);
-        await refreshPages();
-      } catch (error) {
-        console.error("Failed to delete page:", error);
-        alert("Failed to delete page.");
-      }
+      return;
     }
+
+    // Don't try to delete optimistic posts from Firestore
+    if (pageData.isOptimistic || pageData.id?.startsWith("temp-")) {
+      // Just remove from local state
+      setPages((currentPages) =>
+        currentPages.filter((p) => p.id !== pageData.id)
+      );
+      return;
+    }
+
+    // 2. Snapshot for rollback
+    const previousPages = [...pages];
+
+    // 3. Mark as deleted optimistically
+    deletedIdsRef.current.add(pageData.id);
+
+    // 4. Remove immediately from UI
+    setPages((currentPages) =>
+      currentPages.filter((p) => p.id !== pageData.id)
+    );
+
+    // 5. Queue the actual delete
+    addToQueue({
+      actionFn: async () => {
+        await deletePage(pageData);
+      },
+      onRollback: () => {
+        deletedIdsRef.current.delete(pageData.id);
+        setPages(previousPages);
+        alert("Something went wrong. The page could not be deleted.");
+      },
+    });
   };
 
   // ------------------------------------------------------------------
@@ -250,6 +575,7 @@ export default function DashboardViewClient({
             alpha={1}
             editTitleOn={editOn} // Passes true if param is 'true' OR 'title'
             dashHex={dashHex}
+            isSyncing={isSyncing}
           />
         </div>
 
@@ -303,17 +629,26 @@ export default function DashboardViewClient({
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
-              {pages.map((page) => (
-                <PageCard
-                  key={page.id}
-                  page={page}
-                  isOwner={isOwner}
-                  editModeOn={editOn}
-                  usernameTag={profileUser.usernameTag}
-                  onDelete={() => handleDeletePage(page)}
-                  onEdit={() => setEditingPage(page)}
-                />
-              ))}
+              {pages
+                .filter((page) => {
+                  // Client-side filtering: only show private pages if user is owner
+                  // Server fetches ALL pages, client decides what to display
+                  if (page.isPrivate && !isOwner) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((page) => (
+                  <PageCard
+                    key={page.id}
+                    page={page}
+                    isOwner={isOwner}
+                    editModeOn={editOn}
+                    usernameTag={profileUser.usernameTag}
+                    onDelete={() => handleDeletePage(page)}
+                    onEdit={() => setEditingPage(page)}
+                  />
+                ))}
             </div>
           )}
         </div>

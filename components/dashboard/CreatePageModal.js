@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Upload, Image as ImageIcon } from "lucide-react";
-import { uploadFile } from "@/lib/data";
 import { processImage } from "@/lib/processImage";
-
-import ImageWithLoader from "@/components/ImageWithLoader";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -23,17 +20,63 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
   // --- DEBUGGING STEP 1: See what the hook returns ---
   const { user } = useAuth();
   const [formData, setFormData] = useState(initialFormData);
-  const [uploading, setUploading] = useState(false);
+
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // When the modal is opened, reset the form data and uploading status
     if (isOpen) {
       setFormData(initialFormData);
-      setUploading(false);
+      setIsProcessing(false);
       setIsSubmitting(false);
     }
   }, [isOpen]);
+
+  const handleFileUpload = async (e) => {
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
+
+    let userId = null;
+    try {
+      userId = user?.uid;
+    } catch (e) {
+      console.error("Error retrieving user ID:", e);
+    }
+
+    if (!userId) return alert("You must be logged in.");
+
+    setIsProcessing(true);
+    try {
+      // Process image - returns { file, blurDataURL, needsServerBlur }
+      const {
+        file: processedFile,
+        blurDataURL,
+        needsServerBlur,
+      } = await processImage(rawFile);
+      //const processedFile = await processImage(rawFile);
+
+      console.log("[CreatePostModal] Image processed:", {
+        hasBlur: !!blurDataURL,
+        needsServerBlur,
+      });
+
+      setFormData((prev) => ({
+        ...prev,
+        blurDataURL: blurDataURL || "",
+        pendingFile: processedFile,
+        needsServerBlur: needsServerBlur,
+      }));
+
+      // const securePath = `users/${userId}/page-thumbnails`;
+      // const file_url = await uploadFile(processedFile, securePath);
+      // setFormData((prev) => ({ ...prev, thumbnail: file_url }));
+    } catch (error) {
+      console.error("Image processing failed:", error);
+      alert("Failed to process image.");
+    }
+    setIsProcessing(false);
+  };
 
   const handleSubmit = async (e) => {
     // Make this function async
@@ -43,45 +86,33 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
     // Prevent function from running again if it's already submitting
     if (isSubmitting) return;
 
-    setIsSubmitting(true); // Disable the button immediately
-    try {
-      // The parent component's onSubmit function is now awaited
-      await onSubmit(formData);
-    } catch (error) {
-      console.error("Submission failed:", error);
-      alert("Failed to create page. Please try again.");
-    } finally {
-      // Re-enable the button when the process is finished
-      setIsSubmitting(false);
-    }
-  };
+    // Validate: must have a file selected (blur OR needsServerBlur flag)
+    if (!formData.pendingFile) return;
 
-  const handleFileUpload = async (e) => {
-    const rawFile = e.target.files[0];
-    if (!rawFile) return;
+    setIsSubmitting(true);
 
-    // Add a check to ensure user is logged in
-    const userId = user?.uid; // Use `user` directly
-    if (!userId) {
-      alert("You must be logged in to upload a file.");
-      return;
-    }
+    // Pass data to parent
+    onSubmit({
+      title: formData.title,
+      description: formData.description,
+      blurDataURL: formData.blurDataURL, // Will be empty for HEIC
+      pendingFile: formData.pendingFile,
+      needsServerBlur: formData.needsServerBlur, // Tell parent this needs server blur
+      isPrivate: formData.isPrivate,
+      isPublic: formData.isPublic,
+    });
 
-    setUploading(true);
-    try {
-      const processedFile = await processImage(rawFile);
-
-      const securePath = `users/${userId}/page-thumbnails`;
-      const file_url = await uploadFile(processedFile, securePath);
-      setFormData((prev) => ({ ...prev, thumbnail: file_url }));
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("Upload failed. See console for details.");
-    }
-    setUploading(false);
+    // Close the modal immediately
+    onClose();
   };
 
   if (!isOpen) return null;
+
+  // Button is enabled when we have a file (either with client blur OR flagged for server blur)
+  const hasImage =
+    formData.pendingFile && (formData.blurDataURL || formData.needsServerBlur);
+  const canSubmit =
+    hasImage && !isProcessing && !isSubmitting && formData.title.trim();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[200] p-4">
@@ -181,67 +212,37 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
             </label>
 
             {/* Public Checkbox */}
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <div className="relative inline-flex items-center">
-                <input
-                  type="checkbox"
-                  id="isPublicCheckbox"
-                  checked={formData.isPublic}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      isPublic: e.target.checked,
-                    }))
-                  }
-                  className="
-          peer h-5 w-5 appearance-none rounded-sm border border-white/40 
-          bg-black/20 backdrop-blur-sm 
-          checked:bg-black/60 checked:border-black/70
-          transition-colors duration-150 cursor-pointer
-        "
-                />
-
-                {/* Check Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="white"
-                  className="pointer-events-none absolute inset-0 m-auto hidden h-3 w-3 peer-checked:block"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m4.5 12.75 6 6 9-13.5"
-                  />
-                </svg>
-              </div>
-
-              <span className="text-xs font-medium text-gray-200">
-                Open posting <br />
-                (anyone can make posts)
-              </span>
-            </label>
           </div>
 
           {/* Thumbnail image */}
           <div>
             <label className="block text-sm font-medium text-gray-50 mb-2">
-              Thumbnail Image
+              Thumbnail Image *
             </label>
             <div className="flex items-center gap-4">
-              {formData.thumbnail ? (
-                <div className="w-16 h-16 rounded-sm overflow-hidden ">
-                  <ImageWithLoader
-                    src={formData.thumbnail}
-                    alt="Thumbnail Preview"
-                    className="w-full h-full object-cover"
-                  />
+              {formData.pendingFile ? (
+                <div className="w-16 h-16 rounded-sm overflow-hidden shadow-md relative">
+                  {formData.blurDataURL ? (
+                    // Show blur preview for regular images
+                    <img
+                      src={formData.blurDataURL}
+                      alt="Thumbnail Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    // Show placeholder for HEIC (no blur yet)
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-sm bg-gray-100  flex items-center justify-center">
-                  <ImageIcon className="w-6 h-6 text-neumorphic-text" />
+                <div className="w-16 h-16 rounded-sm bg-gray-100 flex items-center justify-center">
+                  {isProcessing ? (
+                    <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-neumorphic-text" />
+                  )}
                 </div>
               )}
               <div className="flex-1">
@@ -251,13 +252,20 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
                   onChange={handleFileUpload}
                   className="hidden"
                   id="thumbnail-upload"
+                  disabled={isProcessing}
                 />
                 <label
                   htmlFor="thumbnail-upload"
-                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-sm btn-neumorphic  text-sm text-neumorphic-text cursor-pointer hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed"
+                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-sm btn-neumorphic text-sm text-neumorphic-text cursor-pointer hover:shadow-neumorphic-soft active:shadow-neumorphic-pressed ${
+                    isProcessing ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <Upload className="w-4 h-4" />
-                  {uploading ? "Uploading..." : "Upload Image"}
+                  {isProcessing
+                    ? "Processing..."
+                    : formData.pendingFile
+                    ? "Change Image"
+                    : "Select Image"}
                 </label>
               </div>
             </div>
@@ -275,7 +283,7 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
             <button
               type="submit"
               className="flex-1 py-3 rounded-sm btn-neumorphic text-neumorphic-text font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!formData.title.trim() || uploading || isSubmitting}
+              disabled={!canSubmit}
             >
               {isSubmitting ? "Creating..." : "Create Page"}
             </button>

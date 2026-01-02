@@ -35,7 +35,8 @@ export default async function Page({ params }) {
     }
 
     // Fetch dashboard data in parallel
-    const [pages] = await Promise.all([getPages(profileUser.uid, false)]);
+    // Always fetch ALL pages (including private) - client will filter based on isOwner
+    const [pages] = await Promise.all([getPages(profileUser.uid, true)]);
 
     initialPages = pages || [];
   } catch (err) {

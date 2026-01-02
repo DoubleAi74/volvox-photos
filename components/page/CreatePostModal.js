@@ -50,30 +50,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     }
   }, [isOpen]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isSubmitting) return;
-
-    // Validate: must have a file selected (blur OR needsServerBlur flag)
-    if (!formData.pendingFile) return;
-
-    setIsSubmitting(true);
-
-    // Pass data to parent
-    onSubmit({
-      title: formData.title,
-      description: formData.description,
-      blurDataURL: formData.blurDataURL, // Will be empty for HEIC
-      pendingFile: formData.pendingFile,
-      needsServerBlur: formData.needsServerBlur, // Tell parent this needs server blur
-      content_type: formData.content_type,
-      content: formData.content,
-    });
-
-    // Close the modal immediately
-    onClose();
-  };
-
   const handleThumbnailSelect = async (e) => {
     const rawFile = e.target.files[0];
     if (!rawFile) return;
@@ -88,7 +64,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     if (!userId) return alert("You must be logged in.");
 
     setIsProcessing(true);
-
     try {
       // Process image - returns { file, blurDataURL, needsServerBlur }
       const {
@@ -114,6 +89,30 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
     }
 
     setIsProcessing(false);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    // Validate: must have a file selected (blur OR needsServerBlur flag)
+    if (!formData.pendingFile) return;
+
+    setIsSubmitting(true);
+
+    // Pass data to parent
+    onSubmit({
+      title: formData.title,
+      description: formData.description,
+      blurDataURL: formData.blurDataURL, // Will be empty for HEIC
+      pendingFile: formData.pendingFile,
+      needsServerBlur: formData.needsServerBlur, // Tell parent this needs server blur
+      content_type: formData.content_type,
+      content: formData.content,
+    });
+
+    // Close the modal immediately
+    onClose();
   };
 
   if (!isOpen) return null;
