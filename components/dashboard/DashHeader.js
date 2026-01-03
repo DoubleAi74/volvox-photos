@@ -206,15 +206,6 @@ function DashHeaderInner(
                 {tempTitleText}
               </h1>
 
-              {isSyncing && !heightShort && (
-                <span
-                  className="text-xs ml-2 opacity-70 font-normal"
-                  style={{ color: lighten(dashHex, 200) }}
-                >
-                  Saving changes...
-                </span>
-              )}
-
               {editTitleOn && (
                 <div className="relative inline-flex items-center shrink-0">
                   <button
@@ -269,6 +260,15 @@ function DashHeaderInner(
           </div>
         </div>
       </div>
+
+      {true && !heightShort && (
+        <span
+          className="absolute bottom-5 right-6 text-xs ml-2 opacity-70 font-normal"
+          style={{ color: lighten(dashHex, 200) }}
+        >
+          Saving changes...
+        </span>
+      )}
 
       {/* Render based on optimistic state (titleEditOn) */}
       {titleEditOn && editTitleOn && (

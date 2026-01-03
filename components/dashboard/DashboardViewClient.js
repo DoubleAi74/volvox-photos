@@ -747,9 +747,16 @@ export default function DashboardViewClient({
             </ActionButton>
 
             {/* Desktop-only user badge */}
-            <div className="hidden md:flex items-center gap-2 h-[44px] px-4 rounded-sm bg-black/30 text-zinc-300 backdrop-blur-[1px] border border-white/10">
-              <UserIcon className="w-5 h-5" />
-              <span className="text-sm">{currentUser?.email}</span>
+            <div className="hidden sm:inline">
+              <ActionButton
+                onClick={() => {
+                  return;
+                }}
+                title="Email"
+              >
+                <UserIcon className="w-5 h-5" />
+                <span className="text-sm">{currentUser?.email}</span>
+              </ActionButton>
             </div>
 
             {/* Logout */}

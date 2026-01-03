@@ -455,12 +455,12 @@ export default function PageViewClient({
   };
 
   // Get next and previous posts for preloading
-  const nextPost = currentIndex >= 0 && currentIndex < displayedPosts.length - 1
-    ? displayedPosts[currentIndex + 1]
-    : null;
-  const previousPost = currentIndex > 0
-    ? displayedPosts[currentIndex - 1]
-    : null;
+  const nextPost =
+    currentIndex >= 0 && currentIndex < displayedPosts.length - 1
+      ? displayedPosts[currentIndex + 1]
+      : null;
+  const previousPost =
+    currentIndex > 0 ? displayedPosts[currentIndex - 1] : null;
 
   const skeletonCount = page?.postCount ?? 0;
 
@@ -647,15 +647,17 @@ export default function PageViewClient({
                   <span className="hidden md:inline">Edit</span>
                 </ActionButton>
 
-                <ActionButton
-                  onClick={() => {
-                    return;
-                  }}
-                  title="Email"
-                >
-                  <UserIcon className="w-5 h-5" />
-                  <span className="text-sm">{currentUser?.email}</span>
-                </ActionButton>
+                <div className="hidden sm:inline">
+                  <ActionButton
+                    onClick={() => {
+                      return;
+                    }}
+                    title="Email"
+                  >
+                    <UserIcon className="w-5 h-5" />
+                    <span className="text-sm">{currentUser?.email}</span>
+                  </ActionButton>
+                </div>
 
                 <ActionButton onClick={handleLogout} title="Log out">
                   <LogOut className="w-5 h-5" />
