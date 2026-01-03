@@ -160,7 +160,7 @@ export default function PhotoShowModal({
         ref={dialogRef}
         aria-modal="true"
         aria-label={post ? `Image preview: ${post.title}` : "Image preview"}
-        className="p-0 rounded-lg shadow-2xl overflow-hidden w-[95vw] md:w-[80vw] max-w-none md:max-w-5xl max-h-[80vh] bg-neutral-900 z-50"
+        className="p-0 rounded-lg shadow-2xl overflow-hidden w-[95vw] md:w-[80vw] max-w-none md:max-w-5xl h-full max-h-[80vh] bg-neutral-900 z-50"
       >
         {post && (
           <div className="flex flex-col w-full h-full max-h-[80vh] bg-neutral-900 border border-neutral-800 text-neutral-100 rounded-lg overflow-hidden">
