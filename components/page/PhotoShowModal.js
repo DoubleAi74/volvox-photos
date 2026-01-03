@@ -97,13 +97,44 @@ export default function PhotoShowModal({
     };
 
     // Determine viewport-appropriate width (matching Next.js logic)
+    // const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
+    // const width = vw <= 768 ? (vw <= 640 ? 640 : vw <= 750 ? 750 : 828) : 1920;
+    /////////
+
+    // 1. Get Viewport Width
     const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
-    const width = vw <= 768 ? (vw <= 640 ? 640 : vw <= 750 ? 750 : 828) : 1920;
+
+    // 2. Get Device Pixel Ratio (default to 1 for server/old browsers)
+    const dpr =
+      typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+
+    // 3. Calculate the actual required pixel width based on your 'sizes' prop:
+    //    sizes="(max-width: 768px) 100vw, 50vw"
+    let requiredWidth;
+    if (vw <= 768) {
+      requiredWidth = vw * dpr; // Mobile: 100% width * density
+    } else {
+      requiredWidth = vw * 0.5 * dpr; // Desktop: 50% width * density
+    }
+
+    // 4. Snap to nearest standard Next.js/Cloudflare breakpoints
+    //    (These are the default Next.js deviceSizes/imageSizes.
+    //     If you have custom ones in next.config.js, add them here.)
+    const supportedWidths = [640, 750, 828, 1080, 1200, 1920, 2048, 3840];
+
+    // Find the smallest supported width that is larger than the required width
+    let width = supportedWidths.find((w) => w >= requiredWidth);
+
+    // Fallback: If screen is huge, use the largest available
+    if (!width) width = 3840;
+
+    ////////
 
     // Create real img elements with Cloudflare-optimized URLs
     if (nextPost?.thumbnail) {
       const img = document.createElement("img");
       img.src = getCloudflareUrl(nextPost.thumbnail, width);
+      console.log("Preloading next image:", img.src);
       img.style.position = "absolute";
       img.style.width = "1px";
       img.style.height = "1px";
@@ -218,7 +249,7 @@ export default function PhotoShowModal({
                   onLoad={() => setIsLoaded(true)}
                   className={`
                   object-contain
-                  transition-opacity duration-300 ease-out
+                  transition-opacity duration-200 ease-out
                   ${isLoaded ? "opacity-100" : "opacity-0"}
                 `}
                   priority

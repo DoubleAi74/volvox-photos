@@ -52,7 +52,7 @@ export default function PostCard({
     setIsLoaded(false);
 
     // 2. Check if image is ALREADY loaded (e.g. from cache)
-    if (imageRef.current && imageRef.current.complete) {
+    if (imageRef.current?.complete) {
       setIsLoaded(true);
     }
 
@@ -113,10 +113,12 @@ export default function PostCard({
             {/* 4. Only fade in the image once it reports onLoad */}
             {hasThumbnail && (
               <Image
+                ref={imageRef}
                 src={post.thumbnail}
                 alt={post.title}
                 fill
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                // sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                sizes="(max-width: 640px) 30vw, (max-width: 768px) 20vw, (max-width: 1024px) 15vw, 12vw"
                 priority={isPriority}
                 fetchPriority={isPriority ? "high" : "auto"}
                 // Handle the load state

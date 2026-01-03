@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react"; // 1. Import hooks
+import React, { useState, useEffect, useRef } from "react"; // 1. Import hooks
 import Link from "next/link";
 import { FileText, Trash2, Edit3, Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -23,10 +23,25 @@ export default function PageCard({
 
   // 2. Setup state to track if image is ready
   const [isLoaded, setIsLoaded] = useState(false);
+  const imageRef = useRef(null);
 
   // 3. Reset state if the page thumbnail changes
+
   useEffect(() => {
+    // 1. Reset state when source changes
     setIsLoaded(false);
+
+    // 2. Check if image is ALREADY loaded (e.g. from cache)
+    if (imageRef.current?.complete) {
+      setIsLoaded(true);
+    }
+
+    // 3. Safety fallback: Force show after 1.5s if onLoad event is missed
+    const safetyTimer = setTimeout(() => {
+      if (!isLoaded) setIsLoaded(true);
+    }, 1500);
+
+    return () => clearTimeout(safetyTimer);
   }, [page.thumbnail]);
 
   const handleClick = () => {
@@ -73,6 +88,7 @@ export default function PageCard({
           {/* 4. Only fade in the image once it reports onLoad */}
           {hasThumbnail && (
             <Image
+              ref={imageRef}
               src={page.thumbnail}
               alt={page.title}
               fill
@@ -84,7 +100,7 @@ export default function PageCard({
               // Apply the opacity transition
               className={`
                 object-cover
-                transition-opacity duration-500 ease-in-out
+                transition-opacity duration-300 ease-in-out
                 ${isLoaded ? "opacity-100" : "opacity-0"}
               `}
             />
