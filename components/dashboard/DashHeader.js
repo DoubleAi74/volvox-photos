@@ -261,9 +261,9 @@ function DashHeaderInner(
         </div>
       </div>
 
-      {true && !heightShort && (
+      {isSyncing && !heightShort && (
         <span
-          className="absolute bottom-5 right-6 text-xs ml-2 opacity-70 font-normal"
+          className="absolute bottom-4 right-5 text-xs ml-2 opacity-70 font-normal"
           style={{ color: lighten(dashHex, 200) }}
         >
           Saving changes...
