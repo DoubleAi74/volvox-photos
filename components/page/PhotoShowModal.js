@@ -57,22 +57,55 @@ export default function PhotoShowModal({
   /* ---------------------------------------------
    * Disable body scroll when modal is open
    * ------------------------------------------- */
+  // useEffect(() => {
+  //   if (onOff) {
+  //     // Disable scroll without affecting layout
+  //     document.body.style.overflow = "hidden";
+  //     document.body.style.paddingRight = `${
+  //       window.innerWidth - document.documentElement.clientWidth
+  //     }px`;
+  //   } else {
+  //     // Re-enable scroll
+  //     document.body.style.overflow = "";
+  //     document.body.style.paddingRight = "";
+  //   }
+
+  //   // Cleanup on unmount
+  //   return () => {
+  //     document.body.style.overflow = "";
+  //     document.body.style.paddingRight = "";
+  //   };
+  // }, [onOff]);
+
   useEffect(() => {
     if (onOff) {
-      // Disable scroll without affecting layout
+      // 1. Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+
+      // 2. Lock BOTH html and body
+      // iOS often scrolls 'html' even if 'body' is hidden
+      document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${
-        window.innerWidth - document.documentElement.clientWidth
-      }px`;
+
+      // 3. Prevent "Rubber banding" on iOS
+      document.body.style.overscrollBehavior = "none";
+
+      // 4. Add padding to prevent content from jumping
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     } else {
       // Re-enable scroll
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
       document.body.style.paddingRight = "";
     }
 
     // Cleanup on unmount
     return () => {
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
       document.body.style.paddingRight = "";
     };
   }, [onOff]);
@@ -181,7 +214,7 @@ export default function PhotoShowModal({
       {/* Backdrop with blur */}
       {onOff && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-40"
+          className="fixed inset-0 bg-black/20 backdrop-blur-[1px]  touch-none z-40"
           onClick={onClose}
           aria-hidden="true"
         />
