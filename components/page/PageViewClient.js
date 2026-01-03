@@ -13,6 +13,7 @@ import {
   deletePost,
   uploadFile,
   reindexPosts,
+  reconcilePostCount,
 } from "@/lib/data";
 import { fetchServerBlur } from "@/lib/processImage";
 import PostCard from "@/components/page/PostCard";
@@ -29,8 +30,24 @@ import ActionButton from "@/components/ActionButton";
 
 import { useQueue } from "@/lib/useQueue";
 
-const PostSkeleton = () => (
-  <div className="w-full aspect-square bg-gray-200/50 rounded-xl animate-pulse shadow-sm" />
+const PostSkeleton = ({ blurDataURL }) => (
+  <div
+    className="w-full aspect-square rounded-xl shadow-sm relative overflow-hidden"
+    style={{
+      backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
+    }}
+  >
+    {/* Shimmer overlay effect */}
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+
+    {/* Subtle loading indicator */}
+    {!blurDataURL && (
+      <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
+    )}
+  </div>
 );
 
 const TitleSkeleton = () => (
@@ -47,13 +64,51 @@ export default function PageViewClient({
   const { usernameTag, pageSlug } = params;
   const { user: currentUser, logout } = useAuth();
   const router = useRouter();
-  const { themeState } = useTheme();
-  const [page, setPage] = useState(initialPage);
-  const [posts, setPosts] = useState(initialPosts);
+  const { themeState, clearOptimisticPageData } = useTheme();
+
+  // Initialize with optimistic data if available and matches current slug
+  const [page, setPage] = useState(() => {
+    const optimistic = themeState.optimisticPageData;
+    if (optimistic && optimistic.slug === pageSlug && !initialPage) {
+      return optimistic; // Use optimistic data for instant render
+    }
+    return initialPage; // Fall back to server data
+  });
+
+  const [posts, setPosts] = useState(() => {
+    // If we have real posts from server, use them
+    if (initialPosts && initialPosts.length > 0) {
+      return initialPosts;
+    }
+
+    // Otherwise, if we have optimistic data, create skeleton posts
+    const optimistic = themeState.optimisticPageData;
+    if (
+      optimistic &&
+      optimistic.slug === pageSlug &&
+      optimistic.postCount > 0
+    ) {
+      return Array.from({ length: optimistic.postCount }, (_, i) => ({
+        id: `skeleton-${i}`,
+        isSkeleton: true,
+        blurDataURL: optimistic.previewPostBlurs?.[i] || "",
+        order_index: i,
+      }));
+    }
+
+    return [];
+  });
 
   const handleQueueEmpty = useCallback(async () => {
     if (page?.id) {
       await reindexPosts(page.id);
+
+      // Reconcile postCount to ensure it matches actual posts in database
+      await reconcilePostCount(page.id);
+
+      // Fetch fresh posts from server to remove optimistic flags
+      const freshPosts = await getPostsForPage(page.id);
+      setPosts(freshPosts);
     }
   }, [page?.id]);
 
@@ -97,8 +152,29 @@ export default function PageViewClient({
       ? themeState.backHex
       : profileUser?.dashboard?.backHex || "#ffffff";
 
+  // Reconcile optimistic page data with server data
   useEffect(() => {
-    /// IMPORTANT
+    if (initialPage && initialPage.id) {
+      setPage(initialPage);
+      // Clear optimistic data once we have real server data
+      clearOptimisticPageData();
+    }
+  }, [initialPage, clearOptimisticPageData]);
+
+  // Prefetch dashboard for instant back navigation
+  useEffect(() => {
+    if (usernameTag) {
+      router.prefetch(`/${usernameTag}`);
+    }
+  }, [usernameTag, router]);
+
+  // Reconcile server posts with local optimistic state - run once on mount
+  useEffect(() => {
+    // Only run if we have real server data
+    if (!initialPosts || initialPosts.length === 0) {
+      return;
+    }
+
     const serverIds = new Set(initialPosts.map((p) => p.id));
     deletedIdsRef.current.forEach((id) => {
       if (!serverIds.has(id)) {
@@ -107,6 +183,11 @@ export default function PageViewClient({
     });
 
     setPosts((currentLocalPosts) => {
+      // If posts are skeletons, replace them entirely with server data
+      if (currentLocalPosts.length > 0 && currentLocalPosts[0]?.isSkeleton) {
+        return initialPosts.filter((p) => !deletedIdsRef.current.has(p.id));
+      }
+
       const validServerPosts = initialPosts.filter(
         (p) => !deletedIdsRef.current.has(p.id)
       );
@@ -143,7 +224,8 @@ export default function PageViewClient({
 
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
-  }, [initialPosts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleLogout = async () => {
     try {
@@ -372,6 +454,14 @@ export default function PageViewClient({
     setSelectedPostForModal(displayedPosts[currentIndex - 1]);
   };
 
+  // Get next and previous posts for preloading
+  const nextPost = currentIndex >= 0 && currentIndex < displayedPosts.length - 1
+    ? displayedPosts[currentIndex + 1]
+    : null;
+  const previousPost = currentIndex > 0
+    ? displayedPosts[currentIndex - 1]
+    : null;
+
   const skeletonCount = page?.postCount ?? 0;
 
   return (
@@ -438,7 +528,7 @@ export default function PageViewClient({
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
-                  {displayedPosts.map((post) => (
+                  {displayedPosts.map((post, index) => (
                     <div
                       key={post.id}
                       onClick={() => setSelectedPostForModal(post)}
@@ -451,6 +541,7 @@ export default function PageViewClient({
                         pageSlug={params.pageSlug}
                         onEdit={() => setEditingPost(post)}
                         onDelete={() => handleDeletePost(post)}
+                        index={index}
                       />
                     </div>
                   ))}
@@ -478,6 +569,8 @@ export default function PageViewClient({
             onPrevious={handlePreviousPost}
             hasNext={currentIndex < displayedPosts.length - 1}
             hasPrevious={currentIndex > 0}
+            nextPost={nextPost}
+            previousPost={previousPost}
           />
 
           {isOwner && (
@@ -503,14 +596,16 @@ export default function PageViewClient({
               onSubmit={handleCreatePost}
             />
           )}
-          <Link href={`/${usernameTag}`}>
-            <ActionButton
-              title="Back"
-              className="fixed bottom-6 left-6 md:left-10 z-[100]"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </ActionButton>
-          </Link>
+          {usernameTag && (
+            <Link href={`/${usernameTag}`}>
+              <ActionButton
+                title="Back"
+                className="fixed bottom-6 left-6 md:left-10 z-[100]"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </ActionButton>
+            </Link>
+          )}
 
           <div
             className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"

@@ -1,7 +1,7 @@
 // context/ThemeContext.js
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 const ThemeContext = createContext();
 
@@ -12,14 +12,36 @@ export function ThemeContextProvider({ children }) {
     uid: null,
     dashHex: null,
     backHex: null,
+    optimisticPageData: null, // Stores page preview data for instant navigation
   });
 
-  const updateTheme = (uid, dashHex, backHex) => {
-    setThemeState({ uid, dashHex, backHex });
-  };
+  const updateTheme = useCallback((uid, dashHex, backHex) => {
+    setThemeState((prev) => ({ ...prev, uid, dashHex, backHex }));
+  }, []);
+
+  const setOptimisticPageData = useCallback((pageData) => {
+    setThemeState((prev) => ({
+      ...prev,
+      optimisticPageData: pageData,
+    }));
+  }, []);
+
+  const clearOptimisticPageData = useCallback(() => {
+    setThemeState((prev) => ({
+      ...prev,
+      optimisticPageData: null,
+    }));
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ themeState, updateTheme }}>
+    <ThemeContext.Provider
+      value={{
+        themeState,
+        updateTheme,
+        setOptimisticPageData,
+        clearOptimisticPageData,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

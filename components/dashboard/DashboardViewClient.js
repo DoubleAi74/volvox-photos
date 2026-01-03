@@ -25,6 +25,8 @@ import {
   uploadFile,
   updateUserColours,
   reindexPages,
+  batchFetchPagePreviews,
+  reconcilePageCount,
 } from "@/lib/data";
 import { fetchServerBlur } from "@/lib/processImage";
 
@@ -45,6 +47,7 @@ export default function DashboardViewClient({
   const pathname = usePathname();
 
   const [pages, setPages] = useState(initialPages);
+  const [previewsLoaded, setPreviewsLoaded] = useState(false);
 
   ////// New
 
@@ -61,7 +64,12 @@ export default function DashboardViewClient({
     if (pagesRef.current?.length) {
       await reindexPages(pagesRef.current);
     }
-  }, []);
+
+    // Reconcile pageCount to ensure it matches actual pages in database
+    if (currentUser?.uid) {
+      await reconcilePageCount(currentUser.uid);
+    }
+  }, [currentUser?.uid]);
 
   const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
 
@@ -147,6 +155,39 @@ export default function DashboardViewClient({
   useEffect(() => {
     setEditOn(searchParams.has("edit"));
   }, [searchParams]);
+
+  // 5. Lazy load preview blurs after LCP
+  useEffect(() => {
+    if (previewsLoaded || !pages.length) return;
+
+    // Use requestIdleCallback to defer loading until browser is idle
+    const loadPreviews = async () => {
+      try {
+        const pageIds = pages.map((p) => p.id);
+        const previewMap = await batchFetchPagePreviews(pageIds);
+
+        // Update pages with preview data
+        setPages((currentPages) =>
+          currentPages.map((page) => ({
+            ...page,
+            previewPostBlurs: previewMap[page.id] || [],
+          }))
+        );
+
+        setPreviewsLoaded(true);
+      } catch (error) {
+        console.error("Failed to load preview blurs:", error);
+      }
+    };
+
+    // Defer loading to after initial render
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(() => loadPreviews());
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(loadPreviews, 100);
+    }
+  }, [pages.length, previewsLoaded]);
 
   // REMOVED: Auth-dependent re-fetch was causing phantom page behavior
   // The server component already passes initialPages with correct auth context
@@ -638,7 +679,7 @@ export default function DashboardViewClient({
                   }
                   return true;
                 })
-                .map((page) => (
+                .map((page, index) => (
                   <PageCard
                     key={page.id}
                     page={page}
@@ -647,6 +688,7 @@ export default function DashboardViewClient({
                     usernameTag={profileUser.usernameTag}
                     onDelete={() => handleDeletePage(page)}
                     onEdit={() => setEditingPage(page)}
+                    index={index}
                   />
                 ))}
             </div>

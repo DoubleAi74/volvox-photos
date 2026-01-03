@@ -21,6 +21,9 @@ module.exports = {
           "inset 4px 4px 8px #bebebe, inset -4px -4px 8px #ffffff",
         "neumorphic-soft": "4px 4px 8px #bebebe, -4px -4px 8px #ffffff",
       },
+      animation: {
+        shimmer: "shimmer 2s infinite",
+      },
     },
   },
   plugins: [],

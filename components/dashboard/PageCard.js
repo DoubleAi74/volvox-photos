@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react"; // 1. Import hooks
 import Link from "next/link";
 import { FileText, Trash2, Edit3, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function PageCard({
   page,
@@ -12,8 +13,38 @@ export default function PageCard({
   isOwner,
   editModeOn,
   usernameTag,
+  index = 0,
 }) {
   const isOptimistic = page.isOptimistic || false;
+  const { setOptimisticPageData } = useTheme();
+
+  // Prioritize first 8 images (first 2 rows on desktop, first 4 rows on mobile)
+  const isPriority = index < 8;
+
+  // 2. Setup state to track if image is ready
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // 3. Reset state if the page thumbnail changes
+  useEffect(() => {
+    setIsLoaded(false);
+  }, [page.thumbnail]);
+
+  const handleClick = () => {
+    // Save page data to context for instant navigation
+    setOptimisticPageData({
+      id: page.id,
+      title: page.title,
+      postCount: page.postCount || 0,
+      thumbnail: page.thumbnail,
+      blurDataURL: page.blurDataURL,
+      slug: page.slug,
+      description: page.description,
+      previewPostBlurs: page.previewPostBlurs || [],
+      userId: page.userId,
+      isPrivate: page.isPrivate,
+      isPublic: page.isPublic,
+    });
+  };
 
   // Check various states
   const hasThumbnail = !!page.thumbnail;
@@ -23,29 +54,39 @@ export default function PageCard({
 
   // Card content JSX (reused for both clickable and non-clickable versions)
   const cardContent = (
-    <div className={`p-2 rounded-md bg-[#f7f6f3]/50 shadow-md hover:shadow-neumorphic-soft transition-all duration-300 h-full mb-[-10px] ${!isOptimistic ? 'cursor-pointer' : 'cursor-default'}`}>
+    <div
+      className={`p-2 rounded-md bg-[#f7f6f3]/50 shadow-md hover:shadow-neumorphic-soft transition-all duration-300 h-full mb-[-10px] ${
+        !isOptimistic ? "cursor-pointer" : "cursor-default"
+      }`}
+    >
       {hasThumbnail || hasBlur || isUploadingHeic ? (
         <div
           className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
           style={{
             // Apply the blur to the container background
-            backgroundImage: hasBlur
-              ? `url("${page.blurDataURL}")`
-              : undefined,
+            backgroundImage: hasBlur ? `url("${page.blurDataURL}")` : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundColor: !hasBlur ? "#e5e5e5" : undefined,
           }}
         >
-          {/* Only render the Image component if we have a real thumbnail URL */}
+          {/* 4. Only fade in the image once it reports onLoad */}
           {hasThumbnail && (
             <Image
               src={page.thumbnail}
               alt={page.title}
               fill
-              sizes="(max-width: 768px) 100vw, 33vw"
-              className="object-cover"
-              priority={false}
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              priority={isPriority}
+              fetchPriority={isPriority ? "high" : "auto"}
+              // Handle the load state
+              onLoad={() => setIsLoaded(true)}
+              // Apply the opacity transition
+              className={`
+                object-cover
+                transition-opacity duration-500 ease-in-out
+                ${isLoaded ? "opacity-100" : "opacity-0"}
+              `}
             />
           )}
 
@@ -90,7 +131,11 @@ export default function PageCard({
     >
       {/* Wrap in Link only if not optimistic (uploading) */}
       {!isOptimistic ? (
-        <Link href={`/${usernameTag}/${page.slug}`} prefetch>
+        <Link
+          href={`/${usernameTag}/${page.slug}`}
+          prefetch
+          onClick={handleClick}
+        >
           {cardContent}
         </Link>
       ) : (
