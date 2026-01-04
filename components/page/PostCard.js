@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 // 1. Import useState and useEffect
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Link from "next/link";
 import {
   Edit3,
@@ -45,24 +45,35 @@ export default function PostCard({
 
   // 2. Setup state to track if image is ready
   const [isLoaded, setIsLoaded] = useState(false);
+  const [wasCached, setWasCached] = useState(false);
   const imageRef = useRef(null);
 
-  useEffect(() => {
-    // 1. Reset state when source changes
-    setIsLoaded(false);
+  useLayoutEffect(() => {
+    const img = imageRef.current;
+    if (!img) return;
 
-    // 2. Check if image is ALREADY loaded (e.g. from cache)
-    if (imageRef.current?.complete) {
-      setIsLoaded(true);
-    }
+    const cached = img.complete;
 
-    // 3. Safety fallback: Force show after 1.5s if onLoad event is missed
-    const safetyTimer = setTimeout(() => {
-      if (!isLoaded) setIsLoaded(true);
-    }, 1500);
-
-    return () => clearTimeout(safetyTimer);
+    setWasCached(cached);
+    if (cached) setIsLoaded(true);
   }, [post.thumbnail]);
+
+  // useEffect(() => {
+  //   // 1. Reset state when source changes
+  //   setIsLoaded(false);
+
+  //   // 2. Check if image is ALREADY loaded (e.g. from cache)
+  //   if (imageRef.current?.complete) {
+  //     setIsLoaded(true);
+  //   }
+
+  //   // 3. Safety fallback: Force show after 1.5s if onLoad event is missed
+  //   const safetyTimer = setTimeout(() => {
+  //     if (!isLoaded) setIsLoaded(true);
+  //   }, 1500);
+
+  //   return () => clearTimeout(safetyTimer);
+  // }, [post.thumbnail]);
 
   // Skeleton render
   if (isSkeleton) {
@@ -124,11 +135,16 @@ export default function PostCard({
                 // Handle the load state
                 onLoad={() => setIsLoaded(true)}
                 // Apply the opacity transition
+                // className={`
+                //   object-cover
+                //   transition-opacity duration-500 ease-in-out
+                //   ${isLoaded ? "opacity-100" : "opacity-0"}
+                // `}
                 className={`
-                  object-cover
-                  transition-opacity duration-500 ease-in-out
-                  ${isLoaded ? "opacity-100" : "opacity-0"}
-                `}
+    object-cover
+    ${wasCached ? "" : "transition-opacity duration-300"}
+    ${isLoaded ? "opacity-100" : "opacity-0"}
+  `}
               />
             )}
 

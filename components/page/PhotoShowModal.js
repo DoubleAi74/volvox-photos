@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
@@ -16,7 +16,9 @@ export default function PhotoShowModal({
   previousPost,
 }) {
   const dialogRef = useRef(null);
+  const imageRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [wasCached, setWasCached] = useState(false);
 
   /* ---------------------------------------------
    * Sync <dialog> open/close with parent state
@@ -50,8 +52,14 @@ export default function PhotoShowModal({
   /* ---------------------------------------------
    * Reset image fade when post changes
    * ------------------------------------------- */
-  useEffect(() => {
-    setIsLoaded(false);
+  useLayoutEffect(() => {
+    const img = imageRef.current;
+    if (!img) return;
+
+    const cached = img.complete;
+
+    setWasCached(cached);
+    setIsLoaded(cached);
   }, [post?.id]);
 
   /* ---------------------------------------------
@@ -281,10 +289,10 @@ export default function PhotoShowModal({
                   sizes="(max-width: 768px) 100vw, 50vw"
                   onLoad={() => setIsLoaded(true)}
                   className={`
-                  object-contain
-                  transition-opacity duration-200 ease-out
-                  ${isLoaded ? "opacity-100" : "opacity-0"}
-                `}
+    object-contain
+    ${wasCached ? "" : "transition-opacity duration-500 ease-out"}
+    ${isLoaded ? "opacity-100" : "opacity-0"}
+  `}
                   priority
                 />
 
