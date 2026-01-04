@@ -609,7 +609,7 @@ export default function PageViewClient({
 
           <div
             className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            // style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {!isOwner && isPublic && (
               <ActionButton onClick={() => setShowCreateModal(true)}>
