@@ -150,28 +150,6 @@ export default function PageViewClient({
     }
   }, [initialPage?.id]);
 
-  // SIMPLIFICATION 1: Combined Layout Effects
-  // useLayoutEffect(() => {
-  //   if (
-  //     typeof window !== "undefined" &&
-  //     "scrollRestoration" in window.history
-  //   ) {
-  //     window.history.scrollRestoration = "manual";
-  //   }
-
-  //   // Calculate scroll position immediately
-  //   if (topInfoRef.current) {
-  //     const elementTop = topInfoRef.current.offsetTop;
-  //     const headerHeight = 47;
-  //     window.scrollTo({
-  //       top: elementTop - headerHeight + 25,
-  //       behavior: "instant",
-  //     });
-  //   }
-
-  //   setIsSynced(true);
-  // }, []);
-
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
 
