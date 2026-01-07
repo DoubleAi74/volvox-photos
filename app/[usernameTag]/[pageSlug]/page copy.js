@@ -5,15 +5,14 @@ import {
   getPageBySlug,
   getPostsForPage,
   fetchUserPage,
-  fetchDashboardPreviews, // Ensure this returns { blurDataURL, thumbnail }
-  getDashboardCount, // Ensure this returns an integer
+  fetchDashboardPreviews,
 } from "@/lib/data";
 import PageViewClient from "@/components/page/PageViewClient";
 
 // ----------------------------------------------------------------
 // CONFIGURATION
-// Toggle this to TRUE to fetch the first 20 blurry previews for the Back button
-// Toggle this to FALSE to show blank cards for the Back button
+// Toggle this to TRUE to show blurry previews in the "Back" button skeletons
+// Toggle this to FALSE to show blank (grey) skeletons in the "Back" button
 // ----------------------------------------------------------------
 const LOAD_DASH_PREVIEWS = true;
 
@@ -33,11 +32,7 @@ export default async function Page({ params }) {
   let pageData = null;
   let initialPosts = [];
   let initialInfoTexts = [];
-
-  // New State Variables
   let dashboardPreviews = [];
-  let totalDashboardCount = 0;
-
   let error = null;
 
   try {
@@ -69,19 +64,12 @@ export default async function Page({ params }) {
     }
 
     // 3. Parallel Fetch
-    // We always get the total count. We conditionally get the previews.
-    const [posts, infoTexts, totalCount] = await Promise.all([
+    // We ALWAYS fetch the dashboard list to get the Count
+    const [posts, infoTexts, fetchedPreviews] = await Promise.all([
       getPostsForPage(pageData.id),
       fetchUserPage(pageData.id),
-      getDashboardCount(profileUser.uid),
+      fetchDashboardPreviews(profileUser.uid),
     ]);
-
-    totalDashboardCount = totalCount;
-
-    // 4. Conditional Data Fetch (No padding needed)
-    if (LOAD_DASH_PREVIEWS && totalCount > 0) {
-      dashboardPreviews = await fetchDashboardPreviews(profileUser.uid);
-    }
 
     initialPosts = posts.map((post) => {
       if (post.createdAt) {
@@ -91,6 +79,19 @@ export default async function Page({ params }) {
     });
 
     initialInfoTexts = infoTexts;
+
+    // 4. Handle Preview Logic
+    // We map over the results to enforce the toggle preference
+    if (fetchedPreviews && fetchedPreviews.length > 0) {
+      dashboardPreviews = fetchedPreviews.map((p) => ({
+        ...p,
+        // If toggle is ON, keep the data. If OFF, force empty strings.
+        blurDataURL: LOAD_DASH_PREVIEWS ? p.blurDataURL || "" : "",
+        thumbnail: LOAD_DASH_PREVIEWS ? p.thumbnail || "" : "",
+      }));
+    } else {
+      dashboardPreviews = [];
+    }
   } catch (err) {
     console.error("SERVER FETCH FAILED:", err);
     error = "Unable to connect to server. Please try again shortly.";
@@ -103,15 +104,15 @@ export default async function Page({ params }) {
     );
   }
 
-  // Pass separate props for Data and Metadata
+  // All good — pass props to client component
   return (
     <PageViewClient
       profileUser={profileUser}
       initialPage={pageData}
       initialPosts={initialPosts}
       initialInfoTexts={initialInfoTexts}
-      dashboardPreviews={dashboardPreviews} // Array of objects (max 20)
-      totalDashboardCount={totalDashboardCount} // Integer (Total count)
+      // This array now always has the correct length, but blurs depend on toggle
+      allPages={dashboardPreviews}
       params={resolvedParams}
     />
   );

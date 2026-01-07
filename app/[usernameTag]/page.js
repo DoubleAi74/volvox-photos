@@ -1,13 +1,19 @@
 // app/[usernameTag]/page.js
-// This is a Server Component. It fetches data and passes it to the client.
-
 import {
   getUserByUsername,
   getPages,
   fetchHex,
   fetchUserDashboard,
+  batchFetchPagePreviews,
 } from "@/lib/data";
 import DashboardViewClient from "@/components/dashboard/DashboardViewClient";
+
+// ----------------------------------------------------------------
+// CONFIGURATION
+// Toggle this to TRUE to load the grid of mini-blurs inside the cards
+// Toggle this to FALSE to only show the main card thumbnail
+// ----------------------------------------------------------------
+const LOAD_PREVIEWS = true;
 
 export default async function Page({ params }) {
   const resolvedParams = await params;
@@ -15,8 +21,6 @@ export default async function Page({ params }) {
 
   let profileUser = null;
   let initialPages = [];
-  let initialHex = "#000000";
-  let initialDashboardData = null;
   let error = null;
 
   try {
@@ -38,7 +42,24 @@ export default async function Page({ params }) {
     // Always fetch ALL pages (including private) - client will filter based on isOwner
     const [pages] = await Promise.all([getPages(profileUser.uid, true)]);
 
-    initialPages = pages || [];
+    // Handle Previews Logic
+    if (pages && pages.length > 0) {
+      let previewMap = {};
+
+      // 1. Only fetch the heavy preview data if our toggle is ON
+      if (LOAD_PREVIEWS) {
+        const pageIds = pages.map((p) => p.id);
+        previewMap = await batchFetchPagePreviews(pageIds);
+      }
+
+      // 2. Map the data (either with real previews or empty arrays)
+      initialPages = pages.map((page) => ({
+        ...page,
+        previewPostBlurs: LOAD_PREVIEWS ? previewMap[page.id] || [] : [], // If off, return empty array
+      }));
+    } else {
+      initialPages = pages || [];
+    }
   } catch (err) {
     console.error("SERVER FETCH FAILED (username page):", err);
     error = "Unable to load dashboard data at this moment.";

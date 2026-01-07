@@ -1,4 +1,3 @@
-// context/ThemeContext.js
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
@@ -6,13 +5,13 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 const ThemeContext = createContext();
 
 export function ThemeContextProvider({ children }) {
-  // We initialize with null values.
-  // We store 'uid' to make sure we don't accidentally show User A's colors on User B's profile
+  // Just use standard state. No complex storage logic needed.
   const [themeState, setThemeState] = useState({
     uid: null,
     dashHex: null,
     backHex: null,
-    optimisticPageData: null, // Stores page preview data for instant navigation
+    optimisticPageData: null,
+    optimisticDashboardData: null,
   });
 
   const updateTheme = useCallback((uid, dashHex, backHex) => {
@@ -33,6 +32,20 @@ export function ThemeContextProvider({ children }) {
     }));
   }, []);
 
+  const setOptimisticDashboardData = useCallback((dashboardData) => {
+    setThemeState((prev) => ({
+      ...prev,
+      optimisticDashboardData: dashboardData,
+    }));
+  }, []);
+
+  const clearOptimisticDashboardData = useCallback(() => {
+    setThemeState((prev) => ({
+      ...prev,
+      optimisticDashboardData: null,
+    }));
+  }, []);
+
   return (
     <ThemeContext.Provider
       value={{
@@ -40,6 +53,8 @@ export function ThemeContextProvider({ children }) {
         updateTheme,
         setOptimisticPageData,
         clearOptimisticPageData,
+        setOptimisticDashboardData,
+        clearOptimisticDashboardData,
       }}
     >
       {children}

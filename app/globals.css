@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* [data-nextjs-dev-tools] {
+  display: none !important;
+} */
+
 @keyframes fadeInBlur {
   from {
     opacity: 0.3;

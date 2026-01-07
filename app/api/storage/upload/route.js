@@ -23,6 +23,7 @@ export async function POST(request) {
       Bucket: process.env.R2_BUCKET_NAME,
       Key: fileKey, // <--- Use the full path here
       ContentType: contentType,
+      CacheControl: "public, max-age=7200", // 2 hours cache
     });
 
     const signedUrl = await getSignedUrl(r2Client, command, { expiresIn: 300 });

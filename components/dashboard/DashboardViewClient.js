@@ -1,7 +1,13 @@
 // components/dashboard/DashboardViewClient.js
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useTransition,
+} from "react";
 import DashHeader from "@/components/dashboard/DashHeader";
 import DashboardInfoEditor from "@/components/dashboard/DashboardInfoEditor";
 import { useAuth } from "@/context/AuthContext";
@@ -25,7 +31,6 @@ import {
   uploadFile,
   updateUserColours,
   reindexPages,
-  batchFetchPagePreviews,
   reconcilePageCount,
 } from "@/lib/data";
 import { fetchServerBlur } from "@/lib/processImage";
@@ -40,24 +45,16 @@ export default function DashboardViewClient({
 }) {
   const { user: currentUser, logout, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { updateTheme } = useTheme();
+
+  // 1. Grab themeState so we can check for fresh colors
+  const { updateTheme, themeState } = useTheme();
 
   // 2. Initialize URL hooks
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const [pages, setPages] = useState(initialPages);
-  const [previewsLoaded, setPreviewsLoaded] = useState(false);
-
-  ////// New
-
-  // const handleQueueEmpty = useCallback(async () => {
-  //   console.log("Queue is empty, reindexing pages...");
-  //   if (currentUser?.uid) {
-  //     console.log("Reindexing pages...");
-  //     await reindexPages(currentUser.uid);
-  //   }
-  // }, [currentUser?.uid]);
 
   const handleQueueEmpty = useCallback(async () => {
     console.log("Queue is empty, reindexing pages...");
@@ -76,18 +73,9 @@ export default function DashboardViewClient({
   const pagesRef = useRef(initialPages);
   useEffect(() => {
     pagesRef.current = pages;
-    console.log("Pages ref updated:", pagesRef.current);
-    const currentList = pagesRef.current;
-    const maxOrder =
-      currentList.length > 0
-        ? Math.max(...currentList.map((p) => p.order_index || 0))
-        : 0;
-    console.log("Max order index:", maxOrder);
   }, [pages]);
 
   const deletedIdsRef = useRef(new Set());
-
-  ///// ^ new
 
   const [loading, setLoading] = useState(false);
 
@@ -96,39 +84,59 @@ export default function DashboardViewClient({
   const [editingPage, setEditingPage] = useState(null);
 
   // 3. Initialize editOn based on presence of ANY 'edit' param
-  // This ensures editOn is true for both '?edit=true' AND '?edit=title'
   const [editOn, setEditOn] = useState(searchParams.has("edit"));
 
   const isOwner =
     currentUser && profileUser && currentUser.uid === profileUser.uid;
 
+  // ---------------------------------------------------------
+  // COLOR STATE INITIALIZATION FIX
+  // ---------------------------------------------------------
+
+  // Helper: Check if Context has fresh data for THIS user (Active Session)
+  const useLiveContext = themeState.uid === profileUser?.uid;
+
+  // If Context has data, use it (Live). Otherwise, fall back to Server Prop (Stale).
   const [dashHex, setDashHex] = useState(
-    profileUser?.dashboard?.dashHex || "#000000"
+    useLiveContext && themeState.dashHex
+      ? themeState.dashHex
+      : profileUser?.dashboard?.dashHex || "#000000"
   );
+
   const [backHex, setBackHex] = useState(
-    profileUser?.dashboard?.backHex || "#F4F4F5"
+    useLiveContext && themeState.backHex
+      ? themeState.backHex
+      : profileUser?.dashboard?.backHex || "#F4F4F5"
   );
+
+  // ---------------------------------------------------------
+  // SYNC EFFECTS
+  // ---------------------------------------------------------
 
   // Handle Dash Hex Changes
   useEffect(() => {
-    // A. Always sync to Global Context immediately so PageClientView sees it
+    // A. Sync to Global Context immediately so PageClientView sees it instantly
     if (profileUser?.uid) {
       updateTheme(profileUser.uid, dashHex, backHex);
     }
 
-    // B. Stop if the state matches the Server Data (Prevent Back-Button Overwrite)
+    // B. Stop if the state matches the Server Data (Prevent Loop)
     if (dashHex === profileUser?.dashboard?.dashHex) return;
 
     // C. Debounce the Database Save
     const handler = setTimeout(async () => {
       if (profileUser?.uid) {
         await updateUserColours(profileUser.uid, "dashboard.dashHex", dashHex);
-        router.refresh(); // Refresh server cache
+
+        // FIX: Wrap refresh in startTransition to prevent loading screen
+        startTransition(() => {
+          router.refresh();
+        });
       }
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(handler);
-  }, [dashHex, profileUser, router]);
+  }, [dashHex, backHex, profileUser, router, updateTheme]);
 
   // Handle Back Hex Changes
   useEffect(() => {
@@ -144,124 +152,54 @@ export default function DashboardViewClient({
     const handler = setTimeout(async () => {
       if (profileUser?.uid) {
         await updateUserColours(profileUser.uid, "dashboard.backHex", backHex);
-        router.refresh();
+
+        // FIX: Wrap refresh in startTransition to prevent loading screen
+        startTransition(() => {
+          router.refresh();
+        });
       }
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(handler);
-  }, [backHex, profileUser, router]); // Remove dashHex from
+  }, [backHex, dashHex, profileUser, router, updateTheme]);
 
   // 4. Sync State with URL (Handles Back/Forward buttons)
   useEffect(() => {
+    // Because we use window.history in toggleEditMode, we don't need complex locking.
+    // This simply listens for browser Back/Forward navigation.
     setEditOn(searchParams.has("edit"));
   }, [searchParams]);
 
-  // 5. Lazy load preview blurs after LCP
-  useEffect(() => {
-    if (previewsLoaded || !pages.length) return;
+  // // 4. Sync State with URL (Handles Back/Forward buttons)
+  // // useEffect(() => {
+  // //   setEditOn(searchParams.has("edit"));
+  // // }, [searchParams]);
 
-    // Use requestIdleCallback to defer loading until browser is idle
-    const loadPreviews = async () => {
-      try {
-        const pageIds = pages.map((p) => p.id);
-        const previewMap = await batchFetchPagePreviews(pageIds);
+  // // 2. NEW: Add a Ref to track your "Optimistic Intent"
+  // // This tracks what we WANT the state to be, ignoring the URL for a moment
+  // const optimisticEditMode = useRef(null);
 
-        // Update pages with preview data
-        setPages((currentPages) =>
-          currentPages.map((page) => ({
-            ...page,
-            previewPostBlurs: previewMap[page.id] || [],
-          }))
-        );
+  // // 3. FIXED: Update the Sync Effect to respect your manual toggle
+  // useEffect(() => {
+  //   const urlHasEdit = searchParams.has("edit");
 
-        setPreviewsLoaded(true);
-      } catch (error) {
-        console.error("Failed to load preview blurs:", error);
-      }
-    };
-
-    // Defer loading to after initial render
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(() => loadPreviews());
-    } else {
-      // Fallback for browsers without requestIdleCallback
-      setTimeout(loadPreviews, 100);
-    }
-  }, [pages.length, previewsLoaded]);
-
-  // REMOVED: Auth-dependent re-fetch was causing phantom page behavior
-  // The server component already passes initialPages with correct auth context
-  // Adding a client-side fetch here causes race conditions with optimistic updates
-
-  // ------------------------------------------------------------------
-  // ACTION HANDLERS
-  // ------------------------------------------------------------------
-
-  //  useEffect(() => {
-  //   /// IMPORTANT — reconcile server pages with optimistic local state
-
-  //   // 1. Build a set of server-known page IDs
-  //   const serverIds = new Set(initialPages.map((p) => p.id));
-
-  //   // 2. Clean up deleted IDs that the server no longer knows about
-  //   deletedIdsRef.current.forEach((id) => {
-  //     if (!serverIds.has(id)) {
-  //       deletedIdsRef.current.delete(id);
+  //   // If we have a pending manual change (in the Ref)
+  //   if (optimisticEditMode.current !== null) {
+  //     // If the URL hasn't caught up to our intent yet, STOP.
+  //     // Don't let the stale URL overwrite our local state.
+  //     if (optimisticEditMode.current !== urlHasEdit) {
+  //       return;
   //     }
-  //   });
+  //     // If they match, the URL has caught up! We can clear the lock.
+  //     optimisticEditMode.current = null;
+  //   }
 
-  //   setPages((currentLocalPages) => {
-  //     // 3. Remove locally-deleted pages from server data
-  //     const validServerPages = initialPages.filter(
-  //       (p) => !deletedIdsRef.current.has(p.id)
-  //     );
+  //   // Otherwise, sync normally (handles Browser Back/Forward buttons)
+  //   setEditOn(urlHasEdit);
+  // }, [searchParams]);
 
-  //     // 4. Extract optimistic pages (new / editing / reordering)
-  //     const optimisticPages = currentLocalPages.filter((p) => p.isOptimistic);
-
-  //     // 5. Index server pages by clientId (optimistic → canonical bridge)
-  //     const serverPagesByClientId = new Map();
-  //     validServerPages.forEach((p) => {
-  //       if (p.clientId) {
-  //         serverPagesByClientId.set(p.clientId, p);
-  //       }
-  //     });
-
-  //     // 6. Prefer server versions over optimistic ones when matched
-  //     const merged = validServerPages.map((serverPage) => {
-  //       const matchingOptimistic = optimisticPages.find(
-  //         (opt) => opt.clientId && opt.clientId === serverPage.clientId
-  //       );
-
-  //       // If server version exists, always prefer it
-  //       if (matchingOptimistic) {
-  //         return serverPage;
-  //       }
-
-  //       return serverPage;
-  //     });
-
-  //     // 7. Keep optimistic pages that don’t have a server version yet
-  //     optimisticPages.forEach((optPage) => {
-  //       const hasServerVersion =
-  //         optPage.clientId && serverPagesByClientId.has(optPage.clientId);
-  //       const existsById = merged.some((p) => p.id === optPage.id);
-
-  //       if (!hasServerVersion && !existsById) {
-  //         merged.push(optPage);
-  //       }
-  //     });
-
-  //     // 8. Enforce stable ordering
-  //     return merged.sort(
-  //       (a, b) => (a.order_index || 0) - (b.order_index || 0)
-  //     );
-  //   });
-  // }, [initialPages]);
-
-  // SAME I THINK
+  // IMPORTANT: Reconcile server pages with optimistic local state
   useEffect(() => {
-    /// IMPORTANT: Reconcile server pages with optimistic local state
     const serverIds = new Set(initialPages.map((p) => p.id));
 
     // Clean up deleted IDs that the server no longer knows about
@@ -319,18 +257,6 @@ export default function DashboardViewClient({
     });
   }, [initialPages]);
 
-  // const refreshPages = useCallback(async () => {
-  //   setLoading(true);
-  //   const userPages = await getPages(profileUser.uid, isOwner);
-  //   setPages(userPages);
-  //   setLoading(false);
-  //   router.refresh();
-  // }, [isOwner, profileUser?.uid, router]);
-
-  // const handleHeaderColorChange = (newHex) => {
-  //   setHeaderColor(newHex);
-  // };
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -340,29 +266,68 @@ export default function DashboardViewClient({
     }
   };
 
-  // 5. MAIN EDIT TOGGLE HANDLER
-  // - If Off: Sets '?edit=true' (General Edit Mode)
-  // - If On (either 'true' or 'title'): Removes param (Off)
+  // const toggleEditMode = () => {
+  //   const isCurrentlyEditing = searchParams.has("edit");
+
+  //   // Update local state immediately for responsiveness
+  //   setEditOn(!isCurrentlyEditing);
+
+  //   const currentParams = new URLSearchParams(searchParams.toString());
+
+  //   if (isCurrentlyEditing) {
+  //     // Turn OFF: remove the param entirely
+  //     currentParams.delete("edit");
+  //   } else {
+  //     // Turn ON: set to 'true' (General Edit Mode)
+  //     currentParams.set("edit", "true");
+  //   }
+
+  //   router.replace(`${pathname}?${currentParams.toString()}`, {
+  //     scroll: false,
+  //   });
+  // };
+
+  // const toggleEditMode = () => {
+  //   // Calculate the new state based on local state (Client Truth)
+  //   const shouldBeEditing = !editOn;
+
+  //   // A. Lock the effect: Tell it we expect this specific state
+  //   optimisticEditMode.current = shouldBeEditing;
+
+  //   // B. Update UI immediately
+  //   setEditOn(shouldBeEditing);
+
+  //   // C. Perform the navigation
+  //   const currentParams = new URLSearchParams(searchParams.toString());
+  //   if (shouldBeEditing) {
+  //     currentParams.set("edit", "true");
+  //   } else {
+  //     currentParams.delete("edit");
+  //   }
+
+  //   router.replace(`${pathname}?${currentParams.toString()}`, {
+  //     scroll: false,
+  //   });
+  // };
+
   const toggleEditMode = () => {
-    const isCurrentlyEditing = searchParams.has("edit");
+    // 1. Calculate new state locally
+    const shouldBeEditing = !editOn;
 
-    // Update local state immediately for responsiveness
-    setEditOn(!isCurrentlyEditing);
+    // 2. Update UI immediately
+    setEditOn(shouldBeEditing);
 
+    // 3. Construct the new URL parameters
     const currentParams = new URLSearchParams(searchParams.toString());
-
-    if (isCurrentlyEditing) {
-      // Turn OFF: remove the param entirely
-      currentParams.delete("edit");
-    } else {
-      // Turn ON: set to 'true' (General Edit Mode)
-      // We do NOT set 'title' here. That is handled inside DashHeader.
+    if (shouldBeEditing) {
       currentParams.set("edit", "true");
+    } else {
+      currentParams.delete("edit");
     }
 
-    router.replace(`${pathname}?${currentParams.toString()}`, {
-      scroll: false,
-    });
+    // 4. Update URL silently (Prevents loading.js and race conditions)
+    const newUrl = `${pathname}?${currentParams.toString()}`;
+    window.history.replaceState(null, "", newUrl);
   };
 
   const handleCreatePage = async (pageData) => {
@@ -381,7 +346,7 @@ export default function DashboardViewClient({
         : 0;
     const newOrderIndex = maxOrder + 1;
 
-    // Generate a temporary slug for the optimistic page (will be replaced with real one from server)
+    // Generate a temporary slug for the optimistic page
     const tempSlug = `temp-${pageData.title
       .toLowerCase()
       .trim()
@@ -389,14 +354,14 @@ export default function DashboardViewClient({
       .replace(/[^\w-]+/g, "")
       .replace(/--+/g, "-")}-${Date.now()}`;
 
-    // Optimistic page - shows blur if available, otherwise shows as "uploading"
+    // Optimistic page
     const optimisticPage = {
       id: tempId,
       title: pageData.title,
       description: pageData.description,
       thumbnail: "", // Empty until upload completes
       blurDataURL: pageData.blurDataURL || "", // Empty for HEIC
-      userId: currentUser.uid, // IMPORTANT: Must be uid string, not user object
+      userId: currentUser.uid,
       slug: tempSlug, // Temporary slug for PageCard link
       order_index: newOrderIndex,
       created_date: new Date(),
@@ -404,7 +369,7 @@ export default function DashboardViewClient({
       clientId: clientId,
       isPrivate: pageData.isPrivate || false,
       isPublic: pageData.isPublic || false,
-      isUploadingHeic: pageData.needsServerBlur, // Flag for PageCard to show special state
+      isUploadingHeic: pageData.needsServerBlur,
     };
 
     // Update ref and state immediately
@@ -418,14 +383,11 @@ export default function DashboardViewClient({
         // Step 1: Upload the file
         const securePath = `users/${currentUser.uid}/page-thumbnails`;
         const thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
-        console.log("[handleCreatePage] Upload complete:", thumbnailUrl);
 
         // Step 2: Get blur (either from postData or fetch from server for HEIC)
         let blurDataURL = pageData.blurDataURL;
 
         if (pageData.needsServerBlur) {
-          console.log("[handleCreatePage] Fetching server blur for HEIC...");
-
           // Update optimistic page to show blur is being generated
           setPages((prev) =>
             prev.map((p) =>
@@ -436,7 +398,6 @@ export default function DashboardViewClient({
           );
 
           blurDataURL = await fetchServerBlur(thumbnailUrl);
-          console.log("[handleCreatePage] Server blur fetched");
 
           // Update optimistic post with blur
           setPages((prev) =>
@@ -474,7 +435,7 @@ export default function DashboardViewClient({
 
     const previousPages = [...pages];
 
-    // Optimistic update (show blur preview if available)
+    // Optimistic update
     const optimisticPage = {
       ...editingPage,
       title: pageData.title,
@@ -558,7 +519,6 @@ export default function DashboardViewClient({
 
     // Don't try to delete optimistic posts from Firestore
     if (pageData.isOptimistic || pageData.id?.startsWith("temp-")) {
-      // Just remove from local state
       setPages((currentPages) =>
         currentPages.filter((p) => p.id !== pageData.id)
       );
@@ -673,7 +633,6 @@ export default function DashboardViewClient({
               {pages
                 .filter((page) => {
                   // Client-side filtering: only show private pages if user is owner
-                  // Server fetches ALL pages, client decides what to display
                   if (page.isPrivate && !isOwner) {
                     return false;
                   }
@@ -689,6 +648,8 @@ export default function DashboardViewClient({
                     onDelete={() => handleDeletePage(page)}
                     onEdit={() => setEditingPage(page)}
                     index={index}
+                    allPages={pages}
+                    profileUser={profileUser}
                   />
                 ))}
             </div>

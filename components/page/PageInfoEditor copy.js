@@ -1,32 +1,40 @@
 // components/dashboard/DashboardInfoEditor.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { fetchUserPage, listenUserPage, saveUserPage } from "@/lib/data";
+import { fetchUserPage, listenUserPage, saveUserPage } from "@/lib/data"; // adjust path to match your project
 
+/**
+ * Props:
+ *  - uid: string | null  -> the target user's uid whose dashboard info we should show
+ *  - canEdit: boolean    -> whether to show editor UI (defaults to false)
+ */
 export default function PageInfoEditor({
   pid,
   canEdit = false,
   editOn = true,
-  initialData = "",
+  initialText = "",
   index,
 }) {
-  const [text, setText] = useState(initialData);
-  const [serverText, setServerText] = useState(initialData);
+  // 1. Initialize with Server Data immediately
+  // The page loads with content already present. No "" state needed.
+  const [text, setText] = useState(initialText);
+  const [serverText, setServerText] = useState(initialText);
 
-  const [loading, setLoading] = useState(!initialData && !!pid);
+  // Start loading as false if we have data
+  const [loading, setLoading] = useState(!initialText && !!pid);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const saveTimer = useRef(null);
-
-  // Ref for auto-resizing the textarea
-  const textareaRef = useRef(null);
+  //   const [editOn, setEditOn] = useState(false);
 
   useEffect(() => {
     let unsub;
+
     async function init() {
       if (!pid) {
         setLoading(false);
         return;
       }
+
       try {
         unsub = listenUserPage(pid, (data) => {
           let remote;
@@ -36,6 +44,7 @@ export default function PageInfoEditor({
             remote = data?.infoText2 ?? "";
           }
           setServerText(remote);
+          // don't clobber local edits: only overwrite if the previous local value matched last-known serverText.
           setText((prev) => (prev === serverText ? remote : prev));
           setLoading(false);
         });
@@ -43,13 +52,16 @@ export default function PageInfoEditor({
         console.error("Error loading dashboard info:", err);
       }
     }
+
     init();
+
     return () => {
       if (unsub) unsub();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pid]);
 
-  // Autosave logic
+  // autosave when editable
   useEffect(() => {
     if (!pid || !canEdit) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -57,17 +69,8 @@ export default function PageInfoEditor({
       handleSave();
     }, 1500);
     return () => clearTimeout(saveTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, pid, canEdit]);
-
-  // Auto-resize Textarea logic
-  useEffect(() => {
-    if (editOn && textareaRef.current) {
-      // Reset height to auto to shrink if text was deleted
-      textareaRef.current.style.height = "auto";
-      // Set height to scrollHeight to fit content
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [text, editOn]);
 
   async function handleSave() {
     if (!pid || !canEdit) return;
@@ -75,6 +78,8 @@ export default function PageInfoEditor({
     setSaving(true);
     setError(null);
     try {
+      // we pass editor uid as null here — server rules will enforce auth; if you want to pass editor id,
+      // call saveUserDashboard(uid, text, currentUser.uid) from the caller or grab auth here.
       await saveUserPage(pid, text, index);
       setServerText(text);
     } catch (err) {
@@ -85,26 +90,22 @@ export default function PageInfoEditor({
     }
   }
 
+  // Render
   return (
-    <section className="mb-0 pt-0 w-full block">
+    <section className="mb-0 pt-0">
       <div className="min-h-[96px]">
         {loading && !text ? (
           <div className="rounded-md bg-neutral-100 animate-pulse min-h-[96px]" />
         ) : canEdit && editOn ? (
-          // FLEX COL: Stacks textarea and status label vertically.
-          // No absolute positioning prevents overlap.
-          <div className="relative flex flex-col gap-2 w-full pb-2">
+          <div className="relative">
             <textarea
-              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={3}
-              placeholder="Enter page info..."
-              className="w-full p-3 border rounded-md resize-none leading-relaxed overflow-hidden bg-white text-gray-800 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              className="w-full p-3 border rounded-md resize-none leading-relaxed"
             />
-            {/* <div className="flex justify-end w-full px-1"> */}
-            <div className="absolute bottom-4 right-3 z-80">
-              <label className="text-sm text-neutral-500 font-medium">
+            <div className="absolute bottom-4 right-3">
+              <label className="flex items-center gap-2 text-sm text-neutral-600">
                 {saving
                   ? "Saving..."
                   : error ??
@@ -113,19 +114,14 @@ export default function PageInfoEditor({
             </div>
           </div>
         ) : (
-          <div className="prose max-w-none w-full">
+          <div className="prose max-w-none min-h-[96px]">
             {serverText ? (
               <div
-                className="bg-[#f7efe4] p-4 rounded-md shadow-sm w-full break-words"
+                className="bg-[#f7efe4] p-3 rounded-md shadow-sm"
                 dangerouslySetInnerHTML={{ __html: serverText }}
               />
             ) : (
-              // Empty state helper for owners
-              canEdit && (
-                <div className="text-sm text-neutral-400 italic p-2 border border-dashed rounded-md">
-                  (No info text yet. Toggle edit to add.)
-                </div>
-              )
+              <div className="text-sm text-neutral-500">Welcome</div>
             )}
           </div>
         )}

@@ -35,7 +35,7 @@ export default function PostCard({
   const isSkeleton = post.isSkeleton || false;
 
   // Prioritize first 10 images (first 2 rows on desktop, first 5 rows on mobile)
-  const isPriority = index < 10;
+  const isPriority = index < 20;
 
   // Check various states
   const hasThumbnail = !!post.thumbnail;
