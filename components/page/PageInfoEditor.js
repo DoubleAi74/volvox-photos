@@ -1,6 +1,6 @@
-// components/dashboard/DashboardInfoEditor.jsx
+// components/dashboard/PageInfoEditor.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { fetchUserPage, listenUserPage, saveUserPage } from "@/lib/data";
+import { listenUserPage, saveUserPage } from "@/lib/data";
 
 export default function PageInfoEditor({
   pid,
@@ -12,13 +12,21 @@ export default function PageInfoEditor({
   const [text, setText] = useState(initialData);
   const [serverText, setServerText] = useState(initialData);
 
-  const [loading, setLoading] = useState(!initialData && !!pid);
+  const [loading, setLoading] = useState(
+    !initialData && initialData !== "" && !!pid
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const saveTimer = useRef(null);
 
-  // Ref for auto-resizing the textarea
-  const textareaRef = useRef(null);
+  // ------------------------------------------------------------------
+  // STYLES
+  // ------------------------------------------------------------------
+  const structuralStyles =
+    "col-start-1 row-start-1 w-full p-3 text-base leading-relaxed font-sans rounded-md break-words whitespace-pre-wrap outline-none resize-none overflow-hidden";
+
+  const transitionStyles =
+    "transition-[background-color,border-color,box-shadow] duration-100 ease-in-out";
 
   useEffect(() => {
     let unsub;
@@ -49,7 +57,6 @@ export default function PageInfoEditor({
     };
   }, [pid]);
 
-  // Autosave logic
   useEffect(() => {
     if (!pid || !canEdit) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -58,16 +65,6 @@ export default function PageInfoEditor({
     }, 1500);
     return () => clearTimeout(saveTimer.current);
   }, [text, pid, canEdit]);
-
-  // Auto-resize Textarea logic
-  useEffect(() => {
-    if (editOn && textareaRef.current) {
-      // Reset height to auto to shrink if text was deleted
-      textareaRef.current.style.height = "auto";
-      // Set height to scrollHeight to fit content
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [text, editOn]);
 
   async function handleSave() {
     if (!pid || !canEdit) return;
@@ -85,49 +82,70 @@ export default function PageInfoEditor({
     }
   }
 
+  const isEditing = canEdit && editOn;
+  const displayContent = text || serverText || (
+    <span className="invisible">&nbsp;</span>
+  );
+
+  const showSkeleton = loading && !text && !initialData;
+
   return (
-    <section className="mb-0 pt-0 w-full block">
-      <div className="min-h-[96px]">
-        {loading && !text ? (
-          <div className="rounded-md bg-neutral-100 animate-pulse min-h-[96px]" />
-        ) : canEdit && editOn ? (
-          // FLEX COL: Stacks textarea and status label vertically.
-          // No absolute positioning prevents overlap.
-          <div className="relative flex flex-col gap-2 w-full pb-2">
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={3}
-              placeholder="Enter page info..."
-              className="w-full p-3 border rounded-md resize-none leading-relaxed overflow-hidden bg-white text-gray-800 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-            />
-            {/* <div className="flex justify-end w-full px-1"> */}
-            <div className="absolute bottom-4 right-3 z-80">
-              <label className="text-sm text-neutral-500 font-medium">
-                {saving
-                  ? "Saving..."
-                  : error ??
-                    (text === serverText ? "Saved" : "Unsaved changes")}
-              </label>
-            </div>
+    <section className="w-full block">
+      <div className="relative grid grid-cols-1 w-full min-h-[24px]">
+        {showSkeleton ? (
+          <div
+            className={`${structuralStyles} animate-pulse ${
+              isEditing
+                ? "bg-white/70 border-gray-300 text-transparent"
+                : "bg-neutral-200/30 border-transparent text-gray-800 shadow-sm"
+            }`}
+          >
+            &nbsp;
           </div>
         ) : (
-          <div className="prose max-w-none w-full">
-            {serverText ? (
-              <div
-                className="bg-[#f7efe4] p-4 rounded-md shadow-sm w-full break-words"
-                dangerouslySetInnerHTML={{ __html: serverText }}
-              />
-            ) : (
-              // Empty state helper for owners
-              canEdit && (
-                <div className="text-sm text-neutral-400 italic p-2 border border-dashed rounded-md">
-                  (No info text yet. Toggle edit to add.)
-                </div>
-              )
-            )}
-          </div>
+          <>
+            <div
+              className={`${structuralStyles} ${transitionStyles} ${
+                isEditing
+                  ? "bg-white/70 border-gray-300 text-transparent"
+                  : "bg-neutral-200/30 border-transparent text-gray-800 shadow-sm"
+              }`}
+              aria-hidden={isEditing}
+            >
+              {displayContent}
+            </div>
+
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Enter page info..."
+              readOnly={!isEditing}
+              className={`
+                ${structuralStyles}
+                absolute inset-0 z-10
+                bg-transparent border-transparent text-gray-800
+                focus:ring-2 focus:ring-blue-100/50
+                ${
+                  isEditing
+                    ? "opacity-100 visible"
+                    : "opacity-0 invisible pointer-events-none"
+                }
+              `}
+            />
+
+            <div
+              className={`
+                absolute bottom-2 right-2 z-20 pointer-events-none transition-opacity duration-200
+                ${isEditing ? "opacity-100" : "opacity-0"}
+              `}
+            >
+              <label className="text-xs text-neutral-500 font-medium bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-neutral-100">
+                {saving
+                  ? "Saving..."
+                  : error ?? (text === serverText ? "Saved" : "Unsaved")}
+              </label>
+            </div>
+          </>
         )}
       </div>
     </section>

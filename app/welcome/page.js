@@ -78,14 +78,14 @@ export default function WaitlistPage() {
           {/* Instant dark base — prevents white flash */}
           <div className="absolute inset-0 bg-black" />
 
-          {/* Responsive background image */}
+          {/* Respon sive background image */}
           <picture>
             <source srcSet="/background-1440.webp" media="(max-width: 768px)" />
             <img
               src="/background-2560.webp"
               alt=""
               aria-hidden="true"
-              fetchpriority="high"
+              fetchPriority="high"
               decoding="async"
               className="
                 h-full w-full object-cover

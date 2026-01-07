@@ -35,6 +35,7 @@ import ActionButton from "@/components/ActionButton";
 
 import { useQueue } from "@/lib/useQueue";
 
+// --- SKELETONS ---
 const PostSkeleton = ({ blurDataURL }) => (
   <div
     className="w-full aspect-square rounded-xl shadow-sm relative overflow-hidden"
@@ -56,6 +57,7 @@ const TitleSkeleton = () => (
   <div className="h-8 w-48 bg-gray-200/50 rounded-md animate-pulse mb-2" />
 );
 
+// --- MAIN COMPONENT ---
 export default function PageViewClient({
   profileUser,
   initialPage,
@@ -69,6 +71,9 @@ export default function PageViewClient({
   const { user: currentUser, logout } = useAuth();
   const router = useRouter();
   const { themeState, setOptimisticDashboardData } = useTheme();
+
+  // STATE: Controls the swap from "Loading Overlay" to "Real Content"
+  const [isSynced, setIsSynced] = useState(false);
 
   // Initialize with optimistic data
   const [page, setPage] = useState(() => {
@@ -99,6 +104,16 @@ export default function PageViewClient({
     return [];
   });
 
+  // --- DATA PREPARATION FOR OVERLAY ---
+  // On fresh load, we grab blurs from initialPosts.
+  // On client nav, we might fallback to themeState.
+  const serverBlurs = initialPosts?.map((p) => p.blurDataURL) || [];
+  const optimisticBlurs =
+    themeState?.optimisticPageData?.previewPostBlurs || [];
+
+  // Prefer server blurs (fresh load) -> then optimistic (client nav) -> then empty
+  const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
+
   const handleQueueEmpty = useCallback(async () => {
     if (page?.id) {
       await reindexPosts(page.id);
@@ -123,9 +138,8 @@ export default function PageViewClient({
   const [loadingPosts] = useState(false);
   const deletedIdsRef = useRef(new Set());
 
-  // Refs for Scroll Calculation
+  // Ref for Scroll Calculation
   const topInfoRef = useRef(null);
-  const mainContentRef = useRef(null);
 
   const isOwner =
     currentUser && profileUser && currentUser.uid === profileUser.uid;
@@ -150,29 +164,52 @@ export default function PageViewClient({
   }, [initialPage?.id]);
 
   // ------------------------------------------------------------------
-  // INITIAL SCROLL LOGIC
+  // SCROLL SYNC LOGIC
   // ------------------------------------------------------------------
   useLayoutEffect(() => {
-    if (topInfoRef.current && mainContentRef.current) {
-      // 1. Height of the hidden editor
-      const editorHeight = topInfoRef.current.offsetHeight;
+    if (
+      typeof window !== "undefined" &&
+      "scrollRestoration" in window.history
+    ) {
+      window.history.scrollRestoration = "manual";
+    }
 
-      // 2. Measure padding to balance Top vs Sides
-      const contentStyle = window.getComputedStyle(mainContentRef.current);
-      const paddingTop = parseFloat(contentStyle.paddingTop) || 0;
-      const paddingLeft = parseFloat(contentStyle.paddingLeft) || 0;
+    // Set synced first, then scroll after content is visible and laid out
+    setIsSynced(true);
+  }, []);
 
-      // 3. Calculate visual correction:
-      // If Top Padding (e.g., 40px) > Side Padding (e.g., 20px),
-      // we scroll down an extra 20px so the visible gap is 20px.
-      const visualCorrection = Math.max(0, paddingTop - paddingLeft);
+  // Separate effect that runs after isSynced causes a re-render
+  useLayoutEffect(() => {
+    if (isSynced && topInfoRef.current) {
+      const elementTop = topInfoRef.current.offsetTop;
+      const headerHeight = 47;
 
       window.scrollTo({
-        top: editorHeight + visualCorrection - 8,
+        top: elementTop - headerHeight + 25,
         behavior: "instant",
       });
     }
-  }, []);
+  }, [isSynced]);
+  // useLayoutEffect(() => {
+  //   if (
+  //     typeof window !== "undefined" &&
+  //     "scrollRestoration" in window.history
+  //   ) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
+  //   if (topInfoRef.current) {
+  //     const elementTop = topInfoRef.current.offsetTop;
+  //     const headerHeight = 47;
+
+  //     window.scrollTo({
+  //       top: elementTop - headerHeight + 16,
+  //       behavior: "instant",
+  //     });
+  //   }
+
+  //   setIsSynced(true);
+  // }, []);
 
   // ------------------------------------------------------------------
   // BACK HANDLER
@@ -191,7 +228,6 @@ export default function PageViewClient({
     }
   };
 
-  // Reconcile server posts
   useEffect(() => {
     if (!initialPosts || initialPosts.length === 0) return;
 
@@ -439,54 +475,301 @@ export default function PageViewClient({
   const skeletonCount = page?.postCount ?? 0;
 
   return (
+    <>
+      {/* 
+        -------------------------------------------
+        1. REAL CONTENT (Invisible until synced)
+        -------------------------------------------
+      */}
+      <div
+        className="p-0 md:px-6 pt-0 pb-0 min-h-screen w-full"
+        style={{
+          backgroundColor: hexToRgba(activeBackHex, 0.5),
+          opacity: isSynced ? 1 : 0,
+          pointerEvents: isSynced ? "auto" : "none",
+        }}
+      >
+        {/* HEADER */}
+        <div className="sticky top-0 left-0 right-0 z-20 pt-[0px] px-0 bg-gray-100 shadow-md">
+          <div className="">
+            <div
+              className="flex items-center justify-center md:justify-start text-2xl font-bold h-[47px] pt-4 pb-3 text-white px-9 "
+              style={{
+                backgroundColor: activeDashHex || "#ffffff",
+                color: lighten(activeDashHex, 240) || "#000000",
+              }}
+            >
+              {page ? page.title : <TitleSkeleton />}
+              {isSyncing && (
+                <span className="absolute right-4 bottom-2 text-xs ml-4 opacity-70 font-normal">
+                  Saving changes...
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* EDITOR (Will be scrolled past) */}
+        <div
+          className="w-full px-4 md:px-5  py-3 shadow-sm"
+          style={{
+            backgroundColor: hexToRgba(activeBackHex, 1),
+          }}
+        >
+          <div className="max-w-7xl mx-auto">
+            <div className="w-full">
+              <PageInfoEditor
+                pid={page?.id}
+                canEdit={isOwner}
+                editOn={editOn}
+                initialData={initialInfoTexts?.infoText1}
+                index={1}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SCROLL TARGET (Color Bar) */}
+        <div
+          ref={topInfoRef}
+          className="sticky z-10 w-full h-[4px] shadow-sm"
+          style={{
+            backgroundColor: lighten(activeDashHex, 30) || "#ffffff",
+            top: "47px",
+          }}
+        />
+        <div
+          className="sticky z-10 w-full h-[7px] shadow-sm"
+          style={{
+            backgroundColor: activeDashHex || "#ffffff",
+            top: "51px",
+          }}
+        />
+
+        {/* POSTS CONTENT */}
+        <div
+          className="w-full min-h-screen px-4 md:px-5 pt-14 pb-0 shadow-xl"
+          style={{
+            backgroundColor: hexToRgba(activeBackHex, 1),
+          }}
+        >
+          <div className="max-w-7xl mx-auto ">
+            {loadingPosts ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+                {Array.from({ length: skeletonCount }).map((_, i) => (
+                  <PostSkeleton key={i} aspect="4/3" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <h3 className="text-xl font-semibold text-neumorphic mb-0">
+                      This page is empty
+                    </h3>
+                    {isOwner && (
+                      <p className="text-neumorphic-text mb-0">
+                        Create your first post to get started.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
+                    {displayedPosts.map((post, index) => (
+                      <div
+                        key={post.id}
+                        onClick={() => setSelectedPostForModal(post)}
+                        className="cursor-pointer"
+                      >
+                        <PostCard
+                          post={post}
+                          isOwner={isOwner}
+                          editModeOn={editOn}
+                          pageSlug={params.pageSlug}
+                          onEdit={() => setEditingPost(post)}
+                          onDelete={() => handleDeletePost(post)}
+                          index={index}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="w-full mt-10">
+              <PageInfoEditor
+                pid={page?.id}
+                canEdit={isOwner}
+                editOn={editOn}
+                initialData={initialInfoTexts?.infoText2}
+                index={2}
+              />
+            </div>
+            <div className="p-6 min-h-[50dvh]"></div>
+
+            {/* MODALS */}
+            <PhotoShowModal
+              post={selectedPostForModal}
+              onOff={!!selectedPostForModal}
+              onClose={() => setSelectedPostForModal(null)}
+              onNext={handleNextPost}
+              onPrevious={handlePreviousPost}
+              hasNext={currentIndex < displayedPosts.length - 1}
+              hasPrevious={currentIndex > 0}
+              nextPost={nextPost}
+              previousPost={previousPost}
+            />
+
+            {isOwner && (
+              <>
+                <CreatePostModal
+                  isOpen={showCreateModal}
+                  onClose={() => setShowCreateModal(false)}
+                  onSubmit={handleCreatePost}
+                />
+                <EditPostModal
+                  isOpen={!!editingPost}
+                  post={editingPost}
+                  onClose={() => setEditingPost(null)}
+                  onSubmit={handleEditPost}
+                />
+              </>
+            )}
+
+            {!isOwner && isPublic && (
+              <CreatePostModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSubmit={handleCreatePost}
+              />
+            )}
+
+            {usernameTag && (
+              <Link
+                href={`/${usernameTag}`}
+                onClick={handleBackClick}
+                prefetch={true}
+              >
+                <ActionButton
+                  title="Back"
+                  className="fixed bottom-6 left-6 md:left-10 z-[100]"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </ActionButton>
+              </Link>
+            )}
+
+            <div className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3">
+              {!isOwner && isPublic && (
+                <ActionButton onClick={() => setShowCreateModal(true)}>
+                  <Plus className="w-5 h-5" />
+                  <span className="hidden sm:inline">New post</span>
+                </ActionButton>
+              )}
+
+              {isOwner && (
+                <>
+                  <ActionButton onClick={() => setShowCreateModal(true)}>
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">New post</span>
+                  </ActionButton>
+
+                  <ActionButton
+                    onClick={() => setEditOn(!editOn)}
+                    active={editOn}
+                    title="Toggle edit mode"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                      />
+                    </svg>
+                    <span className="hidden md:inline">Edit</span>
+                  </ActionButton>
+
+                  <div className="hidden sm:inline">
+                    <ActionButton
+                      onClick={() => {
+                        return;
+                      }}
+                      title="Email"
+                    >
+                      <UserIcon className="w-5 h-5" />
+                      <span className="text-sm">{currentUser?.email}</span>
+                    </ActionButton>
+                  </div>
+
+                  <ActionButton onClick={handleLogout} title="Log out">
+                    <LogOut className="w-5 h-5" />
+                  </ActionButton>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 
+        -------------------------------------------
+        2. LOADING OVERLAY
+        -------------------------------------------
+      */}
+      {!isSynced && (
+        <LoadingOverlay
+          activeDashHex={activeDashHex}
+          activeBackHex={activeBackHex}
+          pageTitle={page?.title || ""}
+          skeletonCount={page?.postCount || 0}
+          previewBlurs={overlayBlurs} // Pass the calculated blurs here
+        />
+      )}
+    </>
+  );
+}
+
+// --- LOCAL COMPONENT: LOADING OVERLAY ---
+// Updated to pixel-match the "Scrolled" state of the real content
+function LoadingOverlay({
+  activeDashHex,
+  activeBackHex,
+  pageTitle,
+  skeletonCount,
+  previewBlurs,
+}) {
+  return (
     <div
-      className="p-0 md:px-6 pt-0 pb-0 min-h-screen w-fit min-w-full"
+      className="fixed inset-0 z-[9999] p-0 md:px-6 pt-0 pb-0 min-h-screen w-full overflow-hidden"
       style={{
         backgroundColor: hexToRgba(activeBackHex, 0.5),
       }}
     >
-      {/* --- STACK ITEM 1: HEADER --- */}
-      <div className="sticky top-0 left-0 right-0 z-20 pt-[0px] px-0 bg-gray-100 shadow-md">
+      <div className="sticky top-0 left-0 right-0 z-10 pt-[0px] px-0 bg-gray-100 shadow-md">
         <div className="">
           <div
-            className="flex items-center justify-center md:justify-start text-2xl font-bold h-[47px] pt-4 pb-3 text-white px-9 "
+            className="flex items-center justify-center md:justify-start text-2xl font-bold h-[47px] pt-4 pb-3 text-white px-9"
             style={{
-              backgroundColor: activeDashHex || "#ffffff",
+              backgroundColor: activeDashHex,
               color: lighten(activeDashHex, 240) || "#000000",
             }}
           >
-            {page ? page.title : <TitleSkeleton />}
-            {isSyncing && (
-              <span className="absolute right-4 bottom-2 text-xs ml-4 opacity-70 font-normal">
-                Saving changes...
-              </span>
+            {pageTitle || (
+              <div className="h-8 w-48 bg-white/20 rounded-md animate-pulse" />
             )}
           </div>
         </div>
       </div>
 
-      {/* --- STACK ITEM 2: TOP INFO EDITOR --- */}
-      <div
-        ref={topInfoRef}
-        className="w-full px-4 md:px-5 pt-5 pb-6 shadow-sm"
-        style={{
-          backgroundColor: hexToRgba(activeBackHex, 1),
-        }}
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="w-full">
-            <PageInfoEditor
-              pid={page?.id}
-              canEdit={isOwner}
-              editOn={editOn}
-              initialData={initialInfoTexts.infoText1}
-              index={1}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* --- STACK ITEM 3: THE COLOUR BAR --- */}
+      {/* Mimic Color Bar (So layout is identical) */}
       <div
         className="sticky z-10 w-full h-[4px] shadow-sm"
         style={{
@@ -502,176 +785,19 @@ export default function PageViewClient({
         }}
       />
 
-      {/* --- STACK ITEM 4: MAIN CONTENT (POSTS) --- */}
-      {/* Attached Ref here to measure padding */}
       <div
-        ref={mainContentRef}
-        className="w-full min-h-screen px-4 md:px-5 pt-14 pb-0 shadow-xl"
+        // Changed pt-5 to pt-14 to match the Real Content padding
+        className="min-h-screen px-4 md:px-5 pt-14 pb-0 shadow-xl"
         style={{
           backgroundColor: hexToRgba(activeBackHex, 1),
         }}
       >
-        <div className="max-w-7xl mx-auto ">
-          {loadingPosts ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
-              {Array.from({ length: skeletonCount }).map((_, i) => (
-                <PostSkeleton key={i} aspect="4/3" />
-              ))}
-            </div>
-          ) : (
-            <>
-              {posts.length === 0 ? (
-                <div className="text-center py-8">
-                  <h3 className="text-xl font-semibold text-neumorphic mb-0">
-                    This page is empty
-                  </h3>
-                  {isOwner && (
-                    <p className="text-neumorphic-text mb-0">
-                      Create your first post to get started.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
-                  {displayedPosts.map((post, index) => (
-                    <div
-                      key={post.id}
-                      onClick={() => setSelectedPostForModal(post)}
-                      className="cursor-pointer"
-                    >
-                      <PostCard
-                        post={post}
-                        isOwner={isOwner}
-                        editModeOn={editOn}
-                        pageSlug={params.pageSlug}
-                        onEdit={() => setEditingPost(post)}
-                        onDelete={() => handleDeletePost(post)}
-                        index={index}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="w-full mt-10">
-            <PageInfoEditor
-              pid={page?.id}
-              canEdit={isOwner}
-              editOn={editOn}
-              initialData={initialInfoTexts.infoText2}
-              index={2}
-            />
-          </div>
-          <div className="p-6 min-h-[50vh]"></div>
-
-          {/* --- MODALS & FLOATING BUTTONS --- */}
-          <PhotoShowModal
-            post={selectedPostForModal}
-            onOff={!!selectedPostForModal}
-            onClose={() => setSelectedPostForModal(null)}
-            onNext={handleNextPost}
-            onPrevious={handlePreviousPost}
-            hasNext={currentIndex < displayedPosts.length - 1}
-            hasPrevious={currentIndex > 0}
-            nextPost={nextPost}
-            previousPost={previousPost}
-          />
-
-          {isOwner && (
-            <>
-              <CreatePostModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSubmit={handleCreatePost}
-              />
-              <EditPostModal
-                isOpen={!!editingPost}
-                post={editingPost}
-                onClose={() => setEditingPost(null)}
-                onSubmit={handleEditPost}
-              />
-            </>
-          )}
-
-          {!isOwner && isPublic && (
-            <CreatePostModal
-              isOpen={showCreateModal}
-              onClose={() => setShowCreateModal(false)}
-              onSubmit={handleCreatePost}
-            />
-          )}
-
-          {usernameTag && (
-            <Link
-              href={`/${usernameTag}`}
-              onClick={handleBackClick}
-              prefetch={true}
-            >
-              <ActionButton
-                title="Back"
-                className="fixed bottom-6 left-6 md:left-10 z-[100]"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </ActionButton>
-            </Link>
-          )}
-
-          <div className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3">
-            {!isOwner && isPublic && (
-              <ActionButton onClick={() => setShowCreateModal(true)}>
-                <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline">New post</span>
-              </ActionButton>
-            )}
-
-            {isOwner && (
-              <>
-                <ActionButton onClick={() => setShowCreateModal(true)}>
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">New post</span>
-                </ActionButton>
-
-                <ActionButton
-                  onClick={() => setEditOn(!editOn)}
-                  active={editOn}
-                  title="Toggle edit mode"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-5 h-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-                    />
-                  </svg>
-                  <span className="hidden md:inline">Edit</span>
-                </ActionButton>
-
-                <div className="hidden sm:inline">
-                  <ActionButton
-                    onClick={() => {
-                      return;
-                    }}
-                    title="Email"
-                  >
-                    <UserIcon className="w-5 h-5" />
-                    <span className="text-sm">{currentUser?.email}</span>
-                  </ActionButton>
-                </div>
-
-                <ActionButton onClick={handleLogout} title="Log out">
-                  <LogOut className="w-5 h-5" />
-                </ActionButton>
-              </>
-            )}
+        <div className="max-w-7xl mx-auto">
+          {/* Posts grid skeleton - Removed p-5 to match Real Content */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
+            {Array.from({ length: Math.max(skeletonCount, 4) }).map((_, i) => (
+              <PostSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
+            ))}
           </div>
         </div>
       </div>

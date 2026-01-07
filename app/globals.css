@@ -6,6 +6,11 @@
   display: none !important;
 } */
 
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(1px);
+}
+
 @keyframes fadeInBlur {
   from {
     opacity: 0.3;

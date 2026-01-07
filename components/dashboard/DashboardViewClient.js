@@ -564,7 +564,7 @@ export default function DashboardViewClient({
   return (
     <>
       <div
-        className="min-h-[100vh]"
+        className="min-h-[100dvh]"
         style={{
           backgroundColor: hexToRgba(backHex, 1),
         }}

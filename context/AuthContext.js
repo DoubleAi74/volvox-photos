@@ -93,5 +93,16 @@ export const AuthContextProvider = ({ children }) => {
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    // Return safe defaults during SSR or before provider mounts
+    return {
+      user: null,
+      loading: true,
+      signup: async () => {},
+      login: async () => {},
+      logout: async () => {},
+    };
+  }
+  return context;
 };

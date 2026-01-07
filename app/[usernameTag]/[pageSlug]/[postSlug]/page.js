@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getPageBySlug, getPostBySlug, getUserByUsername } from "@/lib/data";
@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export default function PostSlugView({ params }) {
   const router = useRouter();
-  const { usernameTag, pageSlug, postSlug } = params;
+  const { usernameTag, pageSlug, postSlug } = use(params);
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 

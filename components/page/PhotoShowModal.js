@@ -85,36 +85,85 @@ export default function PhotoShowModal({
   //   };
   // }, [onOff]);
 
+  // useEffect(() => {
+  //   if (onOff) {
+  //     // 1. Calculate scrollbar width to prevent layout shift
+  //     const scrollbarWidth =
+  //       window.innerWidth - document.documentElement.clientWidth;
+
+  //     // 2. Lock BOTH html and body
+  //     // iOS often scrolls 'html' even if 'body' is hidden
+  //     document.documentElement.style.overflow = "hidden";
+  //     document.body.style.overflow = "hidden";
+
+  //     // 3. Prevent "Rubber banding" on iOS
+  //     document.body.style.overscrollBehavior = "none";
+
+  //     // 4. Add padding to prevent content from jumping
+  //     document.body.style.paddingRight = `${scrollbarWidth}px`;
+  //   } else {
+  //     // Re-enable scroll
+  //     document.documentElement.style.overflow = "";
+  //     document.body.style.overflow = "";
+  //     document.body.style.overscrollBehavior = "";
+  //     document.body.style.paddingRight = "";
+  //   }
+
+  //   // Cleanup on unmount
+  //   return () => {
+  //     document.documentElement.style.overflow = "";
+  //     document.body.style.overflow = "";
+  //     document.body.style.overscrollBehavior = "";
+  //     document.body.style.paddingRight = "";
+  //   };
+  // }, [onOff]);
+
   useEffect(() => {
     if (onOff) {
-      // 1. Calculate scrollbar width to prevent layout shift
+      // 1. Save current scroll position
+      const scrollY = window.scrollY;
+
+      // 2. Calculate scrollbar width to prevent layout shift
       const scrollbarWidth =
         window.innerWidth - document.documentElement.clientWidth;
 
-      // 2. Lock BOTH html and body
-      // iOS often scrolls 'html' even if 'body' is hidden
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-
-      // 3. Prevent "Rubber banding" on iOS
-      document.body.style.overscrollBehavior = "none";
-
-      // 4. Add padding to prevent content from jumping
+      // 3. Lock scroll while preserving visual position
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
       document.body.style.paddingRight = `${scrollbarWidth}px`;
+      document.body.style.overscrollBehavior = "none";
     } else {
-      // Re-enable scroll
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-      document.body.style.overscrollBehavior = "";
+      // 1. Get the scroll position we saved (stored in body.style.top)
+      const scrollY = document.body.style.top;
+
+      // 2. Remove all the locks
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
       document.body.style.paddingRight = "";
+      document.body.style.overscrollBehavior = "";
+
+      // 3. Restore scroll position
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0", 10) * -1);
+      }
     }
 
     // Cleanup on unmount
     return () => {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-      document.body.style.overscrollBehavior = "";
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
       document.body.style.paddingRight = "";
+      document.body.style.overscrollBehavior = "";
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0", 10) * -1);
+      }
     };
   }, [onOff]);
 
@@ -220,13 +269,13 @@ export default function PhotoShowModal({
   return (
     <>
       {/* Backdrop with blur */}
-      {onOff && (
+      {/* {onOff && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-[1px]  touch-none z-40"
           onClick={onClose}
           aria-hidden="true"
         />
-      )}
+      )} */}
 
       <dialog
         ref={dialogRef}
