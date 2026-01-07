@@ -62,62 +62,6 @@ export default function PhotoShowModal({
     setIsLoaded(cached);
   }, [post?.id]);
 
-  /* ---------------------------------------------
-   * Disable body scroll when modal is open
-   * ------------------------------------------- */
-  // useEffect(() => {
-  //   if (onOff) {
-  //     // Disable scroll without affecting layout
-  //     document.body.style.overflow = "hidden";
-  //     document.body.style.paddingRight = `${
-  //       window.innerWidth - document.documentElement.clientWidth
-  //     }px`;
-  //   } else {
-  //     // Re-enable scroll
-  //     document.body.style.overflow = "";
-  //     document.body.style.paddingRight = "";
-  //   }
-
-  //   // Cleanup on unmount
-  //   return () => {
-  //     document.body.style.overflow = "";
-  //     document.body.style.paddingRight = "";
-  //   };
-  // }, [onOff]);
-
-  // useEffect(() => {
-  //   if (onOff) {
-  //     // 1. Calculate scrollbar width to prevent layout shift
-  //     const scrollbarWidth =
-  //       window.innerWidth - document.documentElement.clientWidth;
-
-  //     // 2. Lock BOTH html and body
-  //     // iOS often scrolls 'html' even if 'body' is hidden
-  //     document.documentElement.style.overflow = "hidden";
-  //     document.body.style.overflow = "hidden";
-
-  //     // 3. Prevent "Rubber banding" on iOS
-  //     document.body.style.overscrollBehavior = "none";
-
-  //     // 4. Add padding to prevent content from jumping
-  //     document.body.style.paddingRight = `${scrollbarWidth}px`;
-  //   } else {
-  //     // Re-enable scroll
-  //     document.documentElement.style.overflow = "";
-  //     document.body.style.overflow = "";
-  //     document.body.style.overscrollBehavior = "";
-  //     document.body.style.paddingRight = "";
-  //   }
-
-  //   // Cleanup on unmount
-  //   return () => {
-  //     document.documentElement.style.overflow = "";
-  //     document.body.style.overflow = "";
-  //     document.body.style.overscrollBehavior = "";
-  //     document.body.style.paddingRight = "";
-  //   };
-  // }, [onOff]);
-
   useEffect(() => {
     if (onOff) {
       // 1. Save current scroll position
@@ -311,7 +255,8 @@ export default function PhotoShowModal({
             </div>
 
             {/* SCROLL CONTAINER */}
-            <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+            {/* <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y"> */}
+            <div className="flex-1 overflow-y-auto overscroll-none">
               {/* IMAGE AREA */}
               <div
                 key={post.id}

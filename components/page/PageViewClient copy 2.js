@@ -10,7 +10,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, LogOut, ArrowLeft, User as UserIcon, Eye } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, User as UserIcon } from "lucide-react";
 import {
   getPostsForPage,
   createPost,
@@ -27,27 +27,29 @@ import EditPostModal from "@/components/page/EditPostModal";
 import PageInfoEditor from "@/components/page/PageInfoEditor";
 import PhotoShowModal from "@/components/page/PhotoShowModal";
 
-import { lighten, hexToRgba } from "@/components/dashboard/DashHeader";
+import { lighten } from "@/components/dashboard/DashHeader";
+import { hexToRgba } from "@/components/dashboard/DashHeader";
+
 import { useTheme } from "@/context/ThemeContext";
 import ActionButton from "@/components/ActionButton";
+
 import { useQueue } from "@/lib/useQueue";
 
+// --- SKELETONS ---
 const PostSkeleton = ({ blurDataURL }) => (
-  <div className="p-1 rounded-md bg-[#3f3e3b]/30 shadow-md h-full flex flex-col">
-    <div
-      className="w-full aspect-[4/3] rounded-sm overflow-hidden relative"
-      style={{
-        backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-      {!blurDataURL && (
-        <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
-      )}
-    </div>
+  <div
+    className="w-full aspect-square rounded-xl shadow-sm relative overflow-hidden"
+    style={{
+      backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
+    }}
+  >
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+    {!blurDataURL && (
+      <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
+    )}
   </div>
 );
 
@@ -55,6 +57,7 @@ const TitleSkeleton = () => (
   <div className="h-8 w-48 bg-gray-200/50 rounded-md animate-pulse mb-2" />
 );
 
+// --- MAIN COMPONENT ---
 export default function PageViewClient({
   profileUser,
   initialPage,
@@ -69,9 +72,10 @@ export default function PageViewClient({
   const router = useRouter();
   const { themeState, setOptimisticDashboardData } = useTheme();
 
+  // STATE: Controls the swap from "Loading Overlay" to "Real Content"
   const [isSynced, setIsSynced] = useState(false);
-  const [debugOverlay, setDebugOverlay] = useState(false);
 
+  // Initialize with optimistic data
   const [page, setPage] = useState(() => {
     const optimistic = themeState.optimisticPageData;
     if (optimistic && optimistic.slug === pageSlug && !initialPage) {
@@ -100,9 +104,14 @@ export default function PageViewClient({
     return [];
   });
 
+  // --- DATA PREPARATION FOR OVERLAY ---
+  // On fresh load, we grab blurs from initialPosts.
+  // On client nav, we might fallback to themeState.
   const serverBlurs = initialPosts?.map((p) => p.blurDataURL) || [];
   const optimisticBlurs =
     themeState?.optimisticPageData?.previewPostBlurs || [];
+
+  // Prefer server blurs (fresh load) -> then optimistic (client nav) -> then empty
   const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
 
   const handleQueueEmpty = useCallback(async () => {
@@ -126,12 +135,16 @@ export default function PageViewClient({
   const [editingPost, setEditingPost] = useState(null);
   const [editOn, setEditOn] = useState(false);
   const [selectedPostForModal, setSelectedPostForModal] = useState(null);
+  const [loadingPosts] = useState(false);
   const deletedIdsRef = useRef(new Set());
+
+  // Ref for Scroll Calculation
   const topInfoRef = useRef(null);
 
   const isOwner =
     currentUser && profileUser && currentUser.uid === profileUser.uid;
   const isPublic = page?.isPublic || false;
+
   const useLiveTheme = themeState.uid === profileUser?.uid;
 
   const activeDashHex =
@@ -150,7 +163,9 @@ export default function PageViewClient({
     }
   }, [initialPage?.id]);
 
-  // SIMPLIFICATION 1: Combined Layout Effects
+  // ------------------------------------------------------------------
+  // SCROLL SYNC LOGIC
+  // ------------------------------------------------------------------
   useLayoutEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -159,19 +174,46 @@ export default function PageViewClient({
       window.history.scrollRestoration = "manual";
     }
 
-    // Calculate scroll position immediately
-    if (topInfoRef.current) {
+    // Set synced first, then scroll after content is visible and laid out
+    setIsSynced(true);
+  }, []);
+
+  // Separate effect that runs after isSynced causes a re-render
+  useLayoutEffect(() => {
+    if (isSynced && topInfoRef.current) {
       const elementTop = topInfoRef.current.offsetTop;
       const headerHeight = 47;
+
       window.scrollTo({
         top: elementTop - headerHeight + 25,
         behavior: "instant",
       });
     }
+  }, [isSynced]);
+  // useLayoutEffect(() => {
+  //   if (
+  //     typeof window !== "undefined" &&
+  //     "scrollRestoration" in window.history
+  //   ) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
 
-    setIsSynced(true);
-  }, []);
+  //   if (topInfoRef.current) {
+  //     const elementTop = topInfoRef.current.offsetTop;
+  //     const headerHeight = 47;
 
+  //     window.scrollTo({
+  //       top: elementTop - headerHeight + 16,
+  //       behavior: "instant",
+  //     });
+  //   }
+
+  //   setIsSynced(true);
+  // }, []);
+
+  // ------------------------------------------------------------------
+  // BACK HANDLER
+  // ------------------------------------------------------------------
   const handleBackClick = () => {
     if (profileUser) {
       setOptimisticDashboardData({
@@ -408,38 +450,46 @@ export default function PageViewClient({
     });
   };
 
-  // SIMPLIFICATION 2: Removed redundant spread [...posts]
-  // `posts` is already an array in state; copying it is unnecessary for read-only ops.
-  const currentIndex = posts.findIndex(
+  const displayedPosts = [...posts];
+  const currentIndex = displayedPosts.findIndex(
     (p) => p.id === selectedPostForModal?.id
   );
 
   const handleNextPost = () => {
-    if (currentIndex >= posts.length - 1) return;
-    setSelectedPostForModal(posts[currentIndex + 1]);
+    if (currentIndex >= displayedPosts.length - 1) return;
+    setSelectedPostForModal(displayedPosts[currentIndex + 1]);
   };
 
   const handlePreviousPost = () => {
     if (currentIndex <= 0) return;
-    setSelectedPostForModal(posts[currentIndex - 1]);
+    setSelectedPostForModal(displayedPosts[currentIndex - 1]);
   };
 
   const nextPost =
-    currentIndex >= 0 && currentIndex < posts.length - 1
-      ? posts[currentIndex + 1]
+    currentIndex >= 0 && currentIndex < displayedPosts.length - 1
+      ? displayedPosts[currentIndex + 1]
       : null;
-  const previousPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
+  const previousPost =
+    currentIndex > 0 ? displayedPosts[currentIndex - 1] : null;
+
+  const skeletonCount = page?.postCount ?? 0;
 
   return (
     <>
+      {/* 
+        -------------------------------------------
+        1. REAL CONTENT (Invisible until synced)
+        -------------------------------------------
+      */}
       <div
         className="p-0 md:px-6 pt-0 pb-0 min-h-screen w-full"
         style={{
           backgroundColor: hexToRgba(activeBackHex, 0.5),
-          opacity: isSynced && !debugOverlay ? 1 : 0,
-          pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
+          opacity: isSynced ? 1 : 0,
+          pointerEvents: isSynced ? "auto" : "none",
         }}
       >
+        {/* HEADER */}
         <div className="sticky top-0 left-0 right-0 z-20 pt-[0px] px-0 bg-gray-100 shadow-md">
           <div className="">
             <div
@@ -459,6 +509,7 @@ export default function PageViewClient({
           </div>
         </div>
 
+        {/* EDITOR (Will be scrolled past) */}
         <div
           className="w-full px-4 md:px-5  py-3 shadow-sm"
           style={{
@@ -478,6 +529,7 @@ export default function PageViewClient({
           </div>
         </div>
 
+        {/* SCROLL TARGET (Color Bar) */}
         <div
           ref={topInfoRef}
           className="sticky z-10 w-full h-[4px] shadow-sm"
@@ -494,6 +546,7 @@ export default function PageViewClient({
           }}
         />
 
+        {/* POSTS CONTENT */}
         <div
           className="w-full min-h-screen px-4 md:px-5 pt-14 pb-0 shadow-xl"
           style={{
@@ -501,38 +554,47 @@ export default function PageViewClient({
           }}
         >
           <div className="max-w-7xl mx-auto ">
-            {/* SIMPLIFICATION 3: Removed dead "loadingPosts" branch */}
-            {posts.length === 0 ? (
-              <div className="text-center py-8">
-                <h3 className="text-xl font-semibold text-neumorphic mb-0">
-                  This page is empty
-                </h3>
-                {isOwner && (
-                  <p className="text-neumorphic-text mb-0">
-                    Create your first post to get started.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
-                {posts.map((post, index) => (
-                  <div
-                    key={post.id}
-                    onClick={() => setSelectedPostForModal(post)}
-                    className="cursor-pointer"
-                  >
-                    <PostCard
-                      post={post}
-                      isOwner={isOwner}
-                      editModeOn={editOn}
-                      pageSlug={params.pageSlug}
-                      onEdit={() => setEditingPost(post)}
-                      onDelete={() => handleDeletePost(post)}
-                      index={index}
-                    />
-                  </div>
+            {loadingPosts ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+                {Array.from({ length: skeletonCount }).map((_, i) => (
+                  <PostSkeleton key={i} aspect="4/3" />
                 ))}
               </div>
+            ) : (
+              <>
+                {posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <h3 className="text-xl font-semibold text-neumorphic mb-0">
+                      This page is empty
+                    </h3>
+                    {isOwner && (
+                      <p className="text-neumorphic-text mb-0">
+                        Create your first post to get started.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
+                    {displayedPosts.map((post, index) => (
+                      <div
+                        key={post.id}
+                        onClick={() => setSelectedPostForModal(post)}
+                        className="cursor-pointer"
+                      >
+                        <PostCard
+                          post={post}
+                          isOwner={isOwner}
+                          editModeOn={editOn}
+                          pageSlug={params.pageSlug}
+                          onEdit={() => setEditingPost(post)}
+                          onDelete={() => handleDeletePost(post)}
+                          index={index}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             <div className="w-full mt-10">
@@ -546,33 +608,40 @@ export default function PageViewClient({
             </div>
             <div className="p-6 min-h-[50dvh]"></div>
 
+            {/* MODALS */}
             <PhotoShowModal
               post={selectedPostForModal}
               onOff={!!selectedPostForModal}
               onClose={() => setSelectedPostForModal(null)}
               onNext={handleNextPost}
               onPrevious={handlePreviousPost}
-              hasNext={currentIndex < posts.length - 1}
+              hasNext={currentIndex < displayedPosts.length - 1}
               hasPrevious={currentIndex > 0}
               nextPost={nextPost}
               previousPost={previousPost}
             />
 
-            {/* SIMPLIFICATION 4: Consolidated Modals */}
-            {(isOwner || isPublic) && (
+            {isOwner && (
+              <>
+                <CreatePostModal
+                  isOpen={showCreateModal}
+                  onClose={() => setShowCreateModal(false)}
+                  onSubmit={handleCreatePost}
+                />
+                <EditPostModal
+                  isOpen={!!editingPost}
+                  post={editingPost}
+                  onClose={() => setEditingPost(null)}
+                  onSubmit={handleEditPost}
+                />
+              </>
+            )}
+
+            {!isOwner && isPublic && (
               <CreatePostModal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onSubmit={handleCreatePost}
-              />
-            )}
-
-            {isOwner && (
-              <EditPostModal
-                isOpen={!!editingPost}
-                post={editingPost}
-                onClose={() => setEditingPost(null)}
-                onSubmit={handleEditPost}
               />
             )}
 
@@ -592,17 +661,7 @@ export default function PageViewClient({
             )}
 
             <div className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3">
-              <ActionButton
-                onClick={() => setDebugOverlay(!debugOverlay)}
-                active={debugOverlay}
-                title="Toggle Loading Overlay"
-              >
-                <Eye className="w-5 h-5" />
-                <span className="hidden md:inline">Dev Overlay</span>
-              </ActionButton>
-
-              {/* SIMPLIFICATION 5: Simplified Conditional Button Rendering */}
-              {(isOwner || isPublic) && (
+              {!isOwner && isPublic && (
                 <ActionButton onClick={() => setShowCreateModal(true)}>
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">New post</span>
@@ -611,6 +670,11 @@ export default function PageViewClient({
 
               {isOwner && (
                 <>
+                  <ActionButton onClick={() => setShowCreateModal(true)}>
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">New post</span>
+                  </ActionButton>
+
                   <ActionButton
                     onClick={() => setEditOn(!editOn)}
                     active={editOn}
@@ -655,19 +719,26 @@ export default function PageViewClient({
         </div>
       </div>
 
-      {(!isSynced || debugOverlay) && (
+      {/* 
+        -------------------------------------------
+        2. LOADING OVERLAY
+        -------------------------------------------
+      */}
+      {!isSynced && (
         <LoadingOverlay
           activeDashHex={activeDashHex}
           activeBackHex={activeBackHex}
           pageTitle={page?.title || ""}
           skeletonCount={page?.postCount || 0}
-          previewBlurs={overlayBlurs}
+          previewBlurs={overlayBlurs} // Pass the calculated blurs here
         />
       )}
     </>
   );
 }
 
+// --- LOCAL COMPONENT: LOADING OVERLAY ---
+// Updated to pixel-match the "Scrolled" state of the real content
 function LoadingOverlay({
   activeDashHex,
   activeBackHex,
@@ -698,6 +769,7 @@ function LoadingOverlay({
         </div>
       </div>
 
+      {/* Mimic Color Bar (So layout is identical) */}
       <div
         className="sticky z-10 w-full h-[4px] shadow-sm"
         style={{
@@ -714,19 +786,17 @@ function LoadingOverlay({
       />
 
       <div
-        className="min-h-screen px-4 md:px-5 pt-[31px] pb-0 shadow-xl"
+        // Changed pt-5 to pt-14 to match the Real Content padding
+        className="min-h-screen px-4 md:px-5 pt-14 pb-0 shadow-xl"
         style={{
           backgroundColor: hexToRgba(activeBackHex, 1),
         }}
       >
         <div className="max-w-7xl mx-auto">
+          {/* Posts grid skeleton - Removed p-5 to match Real Content */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
             {Array.from({ length: Math.max(skeletonCount, 4) }).map((_, i) => (
-              <PostSkeleton
-                key={i}
-                blurDataURL={previewBlurs[i] || ""}
-                aspect="4/3"
-              />
+              <PostSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
             ))}
           </div>
         </div>
