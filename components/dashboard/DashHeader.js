@@ -195,12 +195,14 @@ function DashHeaderInner(
         <div className="mx-auto max-w-8xl px-0">
           <div
             className={`flex items-center justify-between gap-4 ${
-              heightShort ? "min-h-[20px]" : "min-h-[80px] sm:min-h-[100px]"
+              heightShort ? "min-h-[20px]" : "min-h-[70px] sm:min-h-[90px]"
             }`}
           >
             <div className="flex gap-1 min-w-0 flex-1 items-center relative">
               <h1
-                className="text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow pr-4 pl-6 sm:pl-8 break-words leading-tight"
+                className={`text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow pr-4 pl-6  sm:pl-8 break-words leading-tight ${
+                  heightShort ? "" : "pt-5 pb-1"
+                }`}
                 style={{ color: lighten(dashHex, 230) }}
               >
                 {tempTitleText}
@@ -211,7 +213,7 @@ function DashHeaderInner(
                   <button
                     // Updated to use the Optimistic Handler
                     onClick={toggleTitleEdit}
-                    className={`peer h-9 w-9 mt-[3px] mr-4 appearance-none rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm transition-colors duration-150 cursor-pointer ${
+                    className={`peer h-9 w-9 mt-[16px] ml-2 mr-4 appearance-none rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm transition-colors duration-150 cursor-pointer ${
                       titleEditOn
                         ? "bg-black/60 border-black/70"
                         : "hover:bg-black/30"

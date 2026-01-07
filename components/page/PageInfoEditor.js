@@ -135,7 +135,7 @@ export default function PageInfoEditor({
 
             <div
               className={`
-                absolute bottom-2 right-2 z-20 pointer-events-none transition-opacity duration-200
+                absolute bottom-2 right-2 z-19 pointer-events-none transition-opacity duration-200
                 ${isEditing ? "opacity-100" : "opacity-0"}
               `}
             >

@@ -7,19 +7,17 @@ import React, {
   useCallback,
   useRef,
   useTransition,
-  useLayoutEffect,
 } from "react";
 import DashHeader from "@/components/dashboard/DashHeader";
 import DashboardInfoEditor from "@/components/dashboard/DashboardInfoEditor";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, LogOut, User as UserIcon, Eye } from "lucide-react";
+import { Plus, LogOut, User as UserIcon } from "lucide-react";
 import PageCard from "@/components/dashboard/PageCard";
 import CreatePageModal from "@/components/dashboard/CreatePageModal";
 import EditPageModal from "@/components/dashboard/EditPageModal";
 // 1. Next.js Navigation Hooks
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-// import { hexToRgba } from "@/components/dashboard/DashHeader";
-import { lighten, hexToRgba } from "@/components/dashboard/DashHeader";
+import { hexToRgba } from "@/components/dashboard/DashHeader";
 import { useTheme } from "@/context/ThemeContext";
 
 import ActionButton from "@/components/ActionButton";
@@ -56,29 +54,7 @@ export default function DashboardViewClient({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  const [pages, setPages] = useState(() => {
-    if (initialPages && initialPages.length > 0) {
-      return initialPages;
-    }
-    const optimistic = themeState.optimisticDashboardData;
-    if (
-      optimistic &&
-      optimistic.uid === profileUser?.uid &&
-      optimistic.pageCount > 0
-    ) {
-      return Array.from({ length: optimistic.pageCount }, (_, i) => ({
-        id: `skeleton-${i}`,
-        isSkeleton: true,
-        blurDataURL: optimistic.pageBlurs?.[i] || "",
-        order_index: i,
-      }));
-    }
-    return initialPages;
-  });
-
-  const serverBlurs = initialPages?.map((p) => p.blurDataURL) || [];
-  const optimisticBlurs = themeState?.optimisticDashboardData?.pageBlurs || [];
-  const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
+  const [pages, setPages] = useState(initialPages);
 
   const handleQueueEmpty = useCallback(async () => {
     console.log("Queue is empty, reindexing pages...");
@@ -102,8 +78,6 @@ export default function DashboardViewClient({
   const deletedIdsRef = useRef(new Set());
 
   const [loading, setLoading] = useState(false);
-  const [isSynced, setIsSynced] = useState(false);
-  const [debugOverlay, setDebugOverlay] = useState(false);
 
   // UI State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -189,33 +163,43 @@ export default function DashboardViewClient({
     return () => clearTimeout(handler);
   }, [backHex, dashHex, profileUser, router, updateTheme]);
 
-  // Improved Scroll Management
-  useLayoutEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "scrollRestoration" in window.history
-    ) {
-      window.history.scrollRestoration = "manual";
-    }
-
-    // Scroll to top immediately
-    window.scrollTo({
-      top: 0,
-      behavior: "instant",
-    });
-
-    setIsSynced(true);
-  }, []);
-
-  // Sync State with URL (Handles Back/Forward buttons)
+  // 4. Sync State with URL (Handles Back/Forward buttons)
   useEffect(() => {
+    // Because we use window.history in toggleEditMode, we don't need complex locking.
+    // This simply listens for browser Back/Forward navigation.
     setEditOn(searchParams.has("edit"));
   }, [searchParams]);
 
+  // // 4. Sync State with URL (Handles Back/Forward buttons)
+  // // useEffect(() => {
+  // //   setEditOn(searchParams.has("edit"));
+  // // }, [searchParams]);
+
+  // // 2. NEW: Add a Ref to track your "Optimistic Intent"
+  // // This tracks what we WANT the state to be, ignoring the URL for a moment
+  // const optimisticEditMode = useRef(null);
+
+  // // 3. FIXED: Update the Sync Effect to respect your manual toggle
+  // useEffect(() => {
+  //   const urlHasEdit = searchParams.has("edit");
+
+  //   // If we have a pending manual change (in the Ref)
+  //   if (optimisticEditMode.current !== null) {
+  //     // If the URL hasn't caught up to our intent yet, STOP.
+  //     // Don't let the stale URL overwrite our local state.
+  //     if (optimisticEditMode.current !== urlHasEdit) {
+  //       return;
+  //     }
+  //     // If they match, the URL has caught up! We can clear the lock.
+  //     optimisticEditMode.current = null;
+  //   }
+
+  //   // Otherwise, sync normally (handles Browser Back/Forward buttons)
+  //   setEditOn(urlHasEdit);
+  // }, [searchParams]);
+
   // IMPORTANT: Reconcile server pages with optimistic local state
   useEffect(() => {
-    if (!initialPages || initialPages.length === 0) return;
-
     const serverIds = new Set(initialPages.map((p) => p.id));
 
     // Clean up deleted IDs that the server no longer knows about
@@ -226,11 +210,6 @@ export default function DashboardViewClient({
     });
 
     setPages((currentLocalPages) => {
-      // If we have skeleton posts, replace them with server data
-      if (currentLocalPages.length > 0 && currentLocalPages[0]?.isSkeleton) {
-        return initialPages.filter((p) => !deletedIdsRef.current.has(p.id));
-      }
-
       // 1. Filter out deleted pages from server data
       const validServerPages = initialPages.filter(
         (p) => !deletedIdsRef.current.has(p.id)
@@ -248,18 +227,24 @@ export default function DashboardViewClient({
       });
 
       // 4. Build merged list - prefer server versions when they exist
-      const merged = validServerPages.map((serverPage) => {
-        const matchingOptimistic = optimisticPages.find(
-          (opt) => opt.clientId && opt.clientId === serverPage.clientId
-        );
-        return matchingOptimistic ? serverPage : serverPage;
+      const merged = [];
+      const addedClientIds = new Set();
+      const addedIds = new Set();
+
+      // Add all server pages (these are the source of truth)
+      validServerPages.forEach((serverPage) => {
+        merged.push(serverPage);
+        if (serverPage.clientId) {
+          addedClientIds.add(serverPage.clientId);
+        }
+        addedIds.add(serverPage.id);
       });
 
       // 5. Add optimistic pages that haven't been confirmed by server yet
       optimisticPages.forEach((optPage) => {
         const hasServerVersion =
-          optPage.clientId && serverPagesByClientId.has(optPage.clientId);
-        const existsById = merged.some((p) => p.id === optPage.id);
+          optPage.clientId && addedClientIds.has(optPage.clientId);
+        const existsById = addedIds.has(optPage.id);
 
         // Only add if server doesn't have this page yet
         if (!hasServerVersion && !existsById) {
@@ -270,7 +255,7 @@ export default function DashboardViewClient({
       // 6. Sort by order_index for stable display
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
-  }, []);
+  }, [initialPages]);
 
   const handleLogout = async () => {
     try {
@@ -280,6 +265,50 @@ export default function DashboardViewClient({
       console.error("Failed to log out:", error);
     }
   };
+
+  // const toggleEditMode = () => {
+  //   const isCurrentlyEditing = searchParams.has("edit");
+
+  //   // Update local state immediately for responsiveness
+  //   setEditOn(!isCurrentlyEditing);
+
+  //   const currentParams = new URLSearchParams(searchParams.toString());
+
+  //   if (isCurrentlyEditing) {
+  //     // Turn OFF: remove the param entirely
+  //     currentParams.delete("edit");
+  //   } else {
+  //     // Turn ON: set to 'true' (General Edit Mode)
+  //     currentParams.set("edit", "true");
+  //   }
+
+  //   router.replace(`${pathname}?${currentParams.toString()}`, {
+  //     scroll: false,
+  //   });
+  // };
+
+  // const toggleEditMode = () => {
+  //   // Calculate the new state based on local state (Client Truth)
+  //   const shouldBeEditing = !editOn;
+
+  //   // A. Lock the effect: Tell it we expect this specific state
+  //   optimisticEditMode.current = shouldBeEditing;
+
+  //   // B. Update UI immediately
+  //   setEditOn(shouldBeEditing);
+
+  //   // C. Perform the navigation
+  //   const currentParams = new URLSearchParams(searchParams.toString());
+  //   if (shouldBeEditing) {
+  //     currentParams.set("edit", "true");
+  //   } else {
+  //     currentParams.delete("edit");
+  //   }
+
+  //   router.replace(`${pathname}?${currentParams.toString()}`, {
+  //     scroll: false,
+  //   });
+  // };
 
   const toggleEditMode = () => {
     // 1. Calculate new state locally
@@ -538,18 +567,8 @@ export default function DashboardViewClient({
         className="min-h-[100dvh]"
         style={{
           backgroundColor: hexToRgba(backHex, 1),
-          opacity: isSynced && !debugOverlay ? 1 : 0,
-          pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
         }}
       >
-        <div
-          className=" sticky z-50 w-full h-[8px] "
-          style={{
-            backgroundColor: backHex || "#ffffff",
-            top: "0px",
-          }}
-        />
-
         {/* FIXED HEADER */}
         <div className=" fixed top-0 left-0 right-0 z-20 pt-2 px-0">
           <DashHeader
@@ -563,7 +582,7 @@ export default function DashboardViewClient({
 
         {/* CONTENT AREA */}
         <div className="pt-6">
-          <div className="min-h-[58px] sm:min-h-[78px]"></div>
+          <div className="min-h-[100px] sm:min-h-[120px]"></div>
 
           {/* Bio / Info Editor */}
           <div className="max-w-8xl mx-auto">
@@ -581,24 +600,22 @@ export default function DashboardViewClient({
         </div>
 
         {/* STICKY HEADER 2 */}
-        <div className="sticky  top-[84px] left-0 right-0 z-10 pt-3 px-0">
+        <div className="sticky  top-[-2px] left-0 right-0 z-10 pt-3 px-0">
           <DashHeader
             title={""}
             alpha={1}
             profileUser={profileUser}
             editColOn={editOn}
             heightShort={true}
-            dashHex={lighten(dashHex, 30)}
+            dashHex={dashHex}
             setDashHex={setDashHex}
             backHex={backHex}
             setBackHex={setBackHex}
           />
         </div>
 
-        <div className={`${editOn ? "h-[19px]" : "h-[47px]"}`}></div>
-
         {/* PAGES GRID */}
-        <div className="p-3 md:p-6 ">
+        <div className="p-3 md:p-6">
           {loading || pages.length === 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
               {pages.length === 0 && !loading && !isOwner ? (
@@ -660,16 +677,6 @@ export default function DashboardViewClient({
             className="fixed bottom-6 right-6 z-[100] flex flex-wrap items-center gap-3"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            {/* Dev Overlay Toggle */}
-            <ActionButton
-              onClick={() => setDebugOverlay(!debugOverlay)}
-              active={debugOverlay}
-              title="Toggle Loading Overlay"
-            >
-              <Eye className="w-5 h-5" />
-              <span className="hidden md:inline">Dev Overlay</span>
-            </ActionButton>
-
             {/* New Page (only when edit mode is ON) */}
             {editOn && (
               <ActionButton onClick={() => setShowCreateModal(true)}>
@@ -753,88 +760,6 @@ export default function DashboardViewClient({
           </>
         )}
       </div>
-
-      {(!isSynced || debugOverlay) && (
-        <LoadingOverlay
-          dashHex={dashHex}
-          backHex={backHex}
-          profileUser={profileUser}
-          skeletonCount={pages?.length || 8}
-          previewBlurs={overlayBlurs}
-        />
-      )}
     </>
-  );
-}
-
-function LoadingOverlay({
-  dashHex,
-  backHex,
-  profileUser,
-  skeletonCount,
-  previewBlurs,
-}) {
-  const PageSkeleton = ({ blurDataURL }) => (
-    <div
-      className="w-full h-48 rounded-xl shadow-sm overflow-hidden relative"
-      style={{
-        backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-      {!blurDataURL && (
-        <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
-      )}
-    </div>
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-[9999] min-h-[100dvh] overflow-hidden"
-      style={{
-        backgroundColor: hexToRgba(backHex, 1),
-      }}
-    >
-      {/* FIXED HEADER */}
-      <div className="fixed top-0 left-0 right-0 z-20 pt-2 px-0">
-        <DashHeader
-          profileUser={profileUser}
-          alpha={1}
-          editTitleOn={false}
-          dashHex={dashHex}
-          isSyncing={false}
-        />
-      </div>
-
-      {/* CONTENT AREA */}
-      <div className="pt-6">
-        <div className="min-h-[100px] sm:min-h-[120px]"></div>
-      </div>
-
-      {/* STICKY HEADER 2 */}
-      <div className="sticky top-[-2px] left-0 right-0 z-10 pt-3 px-0">
-        <DashHeader
-          title={""}
-          alpha={1}
-          profileUser={profileUser}
-          editColOn={false}
-          heightShort={true}
-          dashHex={dashHex}
-          backHex={backHex}
-        />
-      </div>
-
-      {/* PAGES GRID SKELETON */}
-      <div className="p-3 md:p-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
-          {Array.from({ length: Math.max(skeletonCount, 8) }).map((_, i) => (
-            <PageSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }

@@ -65,3 +65,31 @@ Are you ready to recieve batch 1
 ...
 
 Take some time to remember this and let me know when you are ready for batch 2
+
+I will now confirm which of these features I want you to go ahead and implement. Then I will ask you to address them in batches.
+
+For DashboardViewClient.js (from PageViewClient.js):
+
+1. Loading Overlay System (Lines 658-736)
+2. Improved Scroll Management (Lines 154-173)
+3. Code Simplifications & Cleanups
+4. Dev Overlay Toggle (Lines 595-602)
+
+For DashboardInfoEditor.js (from PageInfoEditor.js):
+
+1. Advanced Styling System (Lines 22-29)
+2. Dual-Layer Text Display (Lines 92-134)
+3. Better Loading State (Lines 90, 95-104)
+4. Better Loading State (Lines 90, 95-104)
+5. Invisible Placeholder Handling (Lines 86-88)
+   6.Better Edit/View Toggle (Lines 85, 118-134)
+6. Improved Textarea Styling (Lines 118-134)
+7. Status Label Positioning (Lines 136-147)
+
+Key Architectural Patterns to Adopt:
+
+1. Optimistic Page Data from Context - PageViewClient uses themeState.optimisticPageData to show skeleton content immediately
+2. Loading Overlay Pattern - Separate overlay that mirrors the real content structure
+3. Sync-based Visibility - Content hidden until scroll position and data are ready
+4. Grid-based Text Editor - Overlapping layers for smoother edit/view transitions
+5. Comprehensive Status Tracking - Loading, syncing, uploading states all visible to user
