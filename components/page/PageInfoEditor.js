@@ -96,7 +96,7 @@ export default function PageInfoEditor({
           <div
             className={`${structuralStyles} animate-pulse ${
               isEditing
-                ? "bg-white/70 border-gray-300 text-transparent"
+                ? "bg-white/70 border-gray-300 text-gray-800"
                 : "bg-white/90 border-transparent text-gray-800 shadow-sm"
             }`}
           >
@@ -107,7 +107,7 @@ export default function PageInfoEditor({
             <div
               className={`${structuralStyles} ${transitionStyles} ${
                 isEditing
-                  ? "bg-white/70 border-gray-300 text-transparent"
+                  ? "bg-white/70 border-gray-300 text-gray-800"
                   : "bg-white/50 border-transparent text-gray-800 shadow-sm"
               }`}
               aria-hidden={isEditing}

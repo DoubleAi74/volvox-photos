@@ -151,25 +151,52 @@ export default function PageViewClient({
   }, [initialPage?.id]);
 
   // SIMPLIFICATION 1: Combined Layout Effects
+  // useLayoutEffect(() => {
+  //   if (
+  //     typeof window !== "undefined" &&
+  //     "scrollRestoration" in window.history
+  //   ) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
+  //   // Calculate scroll position immediately
+  //   if (topInfoRef.current) {
+  //     const elementTop = topInfoRef.current.offsetTop;
+  //     const headerHeight = 47;
+  //     window.scrollTo({
+  //       top: elementTop - headerHeight + 25,
+  //       behavior: "instant",
+  //     });
+  //   }
+
+  //   setIsSynced(true);
+  // }, []);
+
   useLayoutEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "scrollRestoration" in window.history
-    ) {
+    if (typeof window === "undefined") return;
+
+    if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    // Calculate scroll position immediately
-    if (topInfoRef.current) {
-      const elementTop = topInfoRef.current.offsetTop;
-      const headerHeight = 47;
-      window.scrollTo({
-        top: elementTop - headerHeight + 25,
-        behavior: "instant",
-      });
-    }
+    const scrollToTarget = () => {
+      if (!topInfoRef.current) return;
 
-    setIsSynced(true);
+      const rect = topInfoRef.current.getBoundingClientRect();
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+
+      const headerHeight = 47;
+      const targetY = rect.top + scrollTop - headerHeight + 25;
+
+      window.scrollTo(0, targetY);
+      setIsSynced(true);
+    };
+
+    // iOS needs one frame AFTER layout
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToTarget);
+    });
   }, []);
 
   const handleBackClick = () => {

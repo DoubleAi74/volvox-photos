@@ -99,7 +99,7 @@ export default function DashboardInfoEditor({
           <div
             className={`${structuralStyles} animate-pulse ${
               isEditing
-                ? "bg-white/90 border-gray-900 text-transparent"
+                ? "bg-white/90 border-gray-900 text-gray-800"
                 : "bg-white/70 border-transparent text-gray-800 shadow-sm"
             }`}
           >
@@ -110,7 +110,7 @@ export default function DashboardInfoEditor({
             <div
               className={`${structuralStyles} ${transitionStyles} ${
                 isEditing
-                  ? "bg-white/90 border-gray-300 text-transparent"
+                  ? "bg-white/90 border-gray-300 text-gray-800"
                   : "bg-white/70 border-transparent text-gray-800 shadow-sm"
               }`}
               aria-hidden={isEditing}

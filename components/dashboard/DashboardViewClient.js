@@ -587,7 +587,7 @@ export default function DashboardViewClient({
         </div>
 
         {/* STICKY HEADER 2 */}
-        <div className="sticky  top-[94px] left-0 right-0 z-10 pt-0 px-0">
+        <div className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0">
           <DashHeader
             title={""}
             alpha={1}
