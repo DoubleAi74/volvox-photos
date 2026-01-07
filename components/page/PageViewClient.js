@@ -462,7 +462,7 @@ export default function PageViewClient({
         <div
           className="w-full px-4 md:px-5  py-3 shadow-sm"
           style={{
-            backgroundColor: hexToRgba(activeBackHex, 1),
+            backgroundColor: lighten(activeBackHex, -30),
           }}
         >
           <div className="max-w-7xl mx-auto">
@@ -480,10 +480,10 @@ export default function PageViewClient({
 
         <div
           ref={topInfoRef}
-          className="sticky z-10 w-full h-[4px] shadow-sm"
+          className="sticky z-10 w-full h-[9px] shadow-sm"
           style={{
             backgroundColor: lighten(activeDashHex, 30) || "#ffffff",
-            top: "47px",
+            top: "42px",
           }}
         />
         <div

@@ -31,7 +31,7 @@ export default function DashboardInfoEditor({
   // STYLES
   // ------------------------------------------------------------------
   const structuralStyles =
-    "col-start-1 row-start-1 w-full p-3  text-base leading-relaxed font-sans rounded-md break-words whitespace-pre-wrap outline-none resize-none overflow-hidden";
+    "col-start-1 row-start-1 w-full p-3  text-base leading-relaxed font-sans rounded-sm break-words whitespace-pre-wrap outline-none resize-none overflow-hidden";
 
   const transitionStyles =
     "transition-[background-color,border-color,box-shadow] duration-100 ease-in-out";
@@ -99,8 +99,8 @@ export default function DashboardInfoEditor({
           <div
             className={`${structuralStyles} animate-pulse ${
               isEditing
-                ? "bg-white/70 border-gray-300 text-transparent"
-                : "bg-neutral-200/30 border-transparent text-gray-800 shadow-sm"
+                ? "bg-white/90 border-gray-900 text-transparent"
+                : "bg-white/70 border-transparent text-gray-800 shadow-sm"
             }`}
           >
             &nbsp;
@@ -110,8 +110,8 @@ export default function DashboardInfoEditor({
             <div
               className={`${structuralStyles} ${transitionStyles} ${
                 isEditing
-                  ? "bg-white/70 border-gray-300 text-transparent"
-                  : "bg-neutral-200/30 border-transparent text-gray-800 shadow-sm"
+                  ? "bg-white/90 border-gray-300 text-transparent"
+                  : "bg-white/70 border-transparent text-gray-800 shadow-sm"
               }`}
               aria-hidden={isEditing}
             >

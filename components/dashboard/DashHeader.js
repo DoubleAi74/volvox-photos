@@ -244,7 +244,7 @@ function DashHeaderInner(
             </div>
 
             {(editColOn || openColor) && (
-              <div className=" flex shrink-0  py-2 px-7 gap-2">
+              <div className=" flex shrink-0  pt-[10px] pb-[6px] px-7 gap-2">
                 <input
                   type="color"
                   className=" h-8 w-9   cursor-pointer  rounded-sm  border border-white/50 bg-white/10  px-[2px] shadow"

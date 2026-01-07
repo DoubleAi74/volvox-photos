@@ -562,11 +562,17 @@ export default function DashboardViewClient({
         </div>
 
         {/* CONTENT AREA */}
-        <div className="pt-6">
-          <div className="min-h-[58px] sm:min-h-[78px]"></div>
+        <div
+          className="pt-[12px]"
+          style={{
+            backgroundColor: lighten(backHex, -30),
+          }}
+        >
+          <div className="min-h-[58px] sm:min-h-[78px] "></div>
 
           {/* Bio / Info Editor */}
-          <div className="max-w-8xl mx-auto">
+
+          <div className="max-w-8xl mx-auto py-4 ">
             <div className="flex">
               <div className="w-full ml-7 mr-9">
                 <DashboardInfoEditor
@@ -581,7 +587,7 @@ export default function DashboardViewClient({
         </div>
 
         {/* STICKY HEADER 2 */}
-        <div className="sticky  top-[84px] left-0 right-0 z-10 pt-3 px-0">
+        <div className="sticky  top-[94px] left-0 right-0 z-10 pt-0 px-0">
           <DashHeader
             title={""}
             alpha={1}
