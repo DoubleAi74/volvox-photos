@@ -116,6 +116,43 @@ export default function PageViewClient({
 
   const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
 
+  // 1. Create a reference to the floating button container
+  const fabRef = useRef(null);
+
+  useEffect(() => {
+    // Helper function to update position directly
+    const updatePosition = () => {
+      if (!fabRef.current || !window.visualViewport) return;
+
+      const vv = window.visualViewport;
+
+      // Math: visualViewport.height is the current visible height (changes with address bar)
+      // visualViewport.offsetTop is how far down the page we are pushed by the top bar
+      // We subtract 80px (approx size of your buttons + padding)
+      const visibleBottom = vv.height + vv.offsetTop;
+      const targetTop = visibleBottom - 80;
+
+      fabRef.current.style.top = `${targetTop}px`;
+      fabRef.current.style.bottom = "auto"; // Force top-based positioning
+    };
+
+    if (window.visualViewport) {
+      // 2. Attach listeners to the Visual Viewport specifically
+      window.visualViewport.addEventListener("resize", updatePosition);
+      window.visualViewport.addEventListener("scroll", updatePosition);
+
+      // Initial call
+      updatePosition();
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updatePosition);
+        window.visualViewport.removeEventListener("scroll", updatePosition);
+      }
+    };
+  }, []);
+
   const postsRef = useRef(initialPosts);
   useEffect(() => {
     postsRef.current = posts;
@@ -650,23 +687,13 @@ export default function PageViewClient({
               className="fixed right-6 md:right-10 z-[100] flex flex-wrap transition-all duration-300 items-center gap-3"
               style={{ top: "calc(100svh - 80px)" }}
             > */}
-            {/* <div
-              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
-              style={{
-                bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
-              }}
-            > */}
-            <div
-              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
-              style={{
-                // 1. We anchor to the TOP, because the top edge of the phone never moves.
-                // 2. We use 100svh (the height of the screen when bars are showing).
-                // 3. We subtract approx 80px (space for the buttons + margin).
-                // result: The buttons sit at the 'visual bottom' and REFUSE to slide down
-                // when the address bar disappears.
-                top: "calc(100svh - 80px)",
 
-                // Ensure bottom is un-set so it doesn't fight with top
+            <div
+              ref={fabRef} // <--- ATTACH THE REF HERE
+              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
+              style={{
+                // We set a default for Server Side Rendering or if JS fails
+                top: "calc(100svh - 80px)",
                 bottom: "auto",
               }}
             >
