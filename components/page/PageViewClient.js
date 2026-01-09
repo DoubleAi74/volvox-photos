@@ -604,9 +604,15 @@ export default function PageViewClient({
               </Link>
             )}
 
-            <div
-              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
+            {/* <div
+              className="fixed right-6 md:right-10 z-[100] flex flex-wrap transition-all duration-300 items-center gap-3"
               style={{ top: "calc(100svh - 80px)" }}
+            > */}
+            <div
+              className="fixed right-6 md:right-10 z-[100] transition-all duration-300 flex flex-wrap items-center gap-3"
+              style={{
+                top: "max(calc(100dvh - 80px), calc(100vh - 120px))",
+              }}
             >
               {false && (
                 <ActionButton
