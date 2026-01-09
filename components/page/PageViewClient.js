@@ -608,7 +608,7 @@ export default function PageViewClient({
             {/* <!-- 1. Red Line (50svh) - Label Left --> */}
             <div
               style={{ top: "50dvh" }}
-              className="fixed left-0 w-full h-[5px] bg-red-500 -translate-y-1/2 z-30 pointer-events-none"
+              className="fixed left-0 w-full h-[5px] bg-red-500 -translate-y-1/2 z-30 transition-transform duration-1000 pointer-events-none"
             >
               <span className="absolute bottom-2 left-4 bg-white/90 text-red-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-red-100">
                 50dvh
