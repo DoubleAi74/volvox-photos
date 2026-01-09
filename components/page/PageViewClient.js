@@ -116,43 +116,6 @@ export default function PageViewClient({
 
   const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
 
-  // 1. Create a reference to the floating button container
-  const fabRef = useRef(null);
-
-  useEffect(() => {
-    // Helper function to update position directly
-    const updatePosition = () => {
-      if (!fabRef.current || !window.visualViewport) return;
-
-      const vv = window.visualViewport;
-
-      // Math: visualViewport.height is the current visible height (changes with address bar)
-      // visualViewport.offsetTop is how far down the page we are pushed by the top bar
-      // We subtract 80px (approx size of your buttons + padding)
-      const visibleBottom = vv.height + vv.offsetTop;
-      const targetTop = visibleBottom - 80;
-
-      fabRef.current.style.top = `${targetTop}px`;
-      fabRef.current.style.bottom = "auto"; // Force top-based positioning
-    };
-
-    if (window.visualViewport) {
-      // 2. Attach listeners to the Visual Viewport specifically
-      window.visualViewport.addEventListener("resize", updatePosition);
-      window.visualViewport.addEventListener("scroll", updatePosition);
-
-      // Initial call
-      updatePosition();
-    }
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", updatePosition);
-        window.visualViewport.removeEventListener("scroll", updatePosition);
-      }
-    };
-  }, []);
-
   const postsRef = useRef(initialPosts);
   useEffect(() => {
     postsRef.current = posts;
@@ -530,7 +493,7 @@ export default function PageViewClient({
 
         <div
           ref={topInfoRef}
-          className="sticky z-10 w-full h-[9px] shadow-sm scroll-mt-[17px]"
+          className="sticky z-10 w-full h-[9px] shadow-sm scroll-mt-[3px] sm:scroll-mt-[17px]"
           style={{
             backgroundColor: lighten(activeDashHex, 30) || "#ffffff",
             top: "42px",
@@ -545,12 +508,71 @@ export default function PageViewClient({
         />
 
         <div
-          className="w-full min-h-screen px-4 md:px-5 pt-14 pb-0 shadow-xl"
+          className="w-full min-h-screen px-4 md:px-5 pt-[0] sm:pt-[56px] pb-0 shadow-xl"
           style={{
             backgroundColor: hexToRgba(activeBackHex, 1),
           }}
         >
+          {/* Buttons On mobile at top */}
+          <div className=" left-0 w-full pb-[20px] pt-[10px]  flex  sm:!hidden justify-between  px-[10px] z-[100]">
+            {usernameTag && (
+              <Link
+                href={`/${usernameTag}`}
+                onClick={handleBackClick}
+                prefetch={true}
+              >
+                <ActionButton title="Back" className="  z-[100]">
+                  <ArrowLeft className="w-5 h-5" />
+                </ActionButton>
+              </Link>
+            )}
+            {/* <div className="w-6 h-4 bg-red-400">d</div> */}
+            <div className="flex justify-end gap-3">
+              {(isOwner || isPublic) && editOn && (
+                <ActionButton onClick={() => setShowCreateModal(true)}>
+                  <Plus className="w-5 h-5" />
+                  <span className="hidden sm:inline">New post</span>
+                </ActionButton>
+              )}
+              {/* <div className="w-6 h-4 bg-red-400">s</div> */}
+
+              {isOwner && (
+                <>
+                  <ActionButton
+                    onClick={() => setEditOn(!editOn)}
+                    active={editOn}
+                    title="Toggle edit mode"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                      />
+                    </svg>
+                    <span className="hidden md:inline">Edit</span>
+                  </ActionButton>
+
+                  {/* <ActionButton onClick={handleLogout} title="Log out">
+                    <LogOut className="w-5 h-5" />
+                  </ActionButton> */}
+                </>
+              )}
+
+              {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+              {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+            </div>
+          </div>
           <div className="max-w-7xl mx-auto ">
+            {/* <div className=" w-full h-5 bg-red-500 sm:!hidden"></div> */}
+
             {/* SIMPLIFICATION 3: Removed dead "loadingPosts" branch */}
             {posts.length === 0 ? (
               <div className="text-center py-8">
@@ -634,69 +656,21 @@ export default function PageViewClient({
               >
                 <ActionButton
                   title="Back"
-                  className="fixed bottom-6 left-6 md:left-10 z-[100]"
+                  className="hidden sm:block sm:fixed bottom-6 left-6 md:left-10 z-[100] "
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </ActionButton>
               </Link>
             )}
 
-            {/* <!-- 1. Red Line (50svh) - Label Left --> */}
-            <div
-              style={{ top: "50dvh" }}
-              className="fixed left-0 w-full h-[5px] bg-red-500 -translate-y-1/2 z-30 transition-transform duration-1000 pointer-events-none"
-            >
-              <span className="absolute bottom-2 left-4 bg-white/90 text-red-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-red-100">
-                50dvh
-              </span>
-            </div>
+            <div className="hidden sm:flex sm:fixed bottom-6 right-6 md:right-10 z-[100]  flex-wrap items-center gap-3">
+              {!isOwner && isPublic && (
+                <ActionButton onClick={() => setShowCreateModal(true)}>
+                  <Plus className="w-5 h-5" />
+                  <span className="hidden sm:inline">New post</span>
+                </ActionButton>
+              )}
 
-            {/* <!-- 2. Blue Line (50lvh) - Label Center --> */}
-            <div
-              style={{ top: "50lvh" }}
-              className="fixed left-0 w-full h-[5px] bg-blue-500 -translate-y-1/2 z-20 pointer-events-none"
-            >
-              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/90 text-blue-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-blue-100">
-                50lvh
-              </span>
-            </div>
-
-            {/* <!-- 3. Green Line (50vh) - Label Right --> */}
-            <div
-              style={{ top: "50vh" }}
-              className="fixed left-0 w-full h-[5px] bg-green-500 -translate-y-1/2 z-10 pointer-events-none"
-            >
-              <span className="absolute bottom-2 right-4 bg-white/90 text-green-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-green-100">
-                50vh
-              </span>
-            </div>
-
-            <div
-              style={{
-                position: "fixed",
-                top: "50svh", // Anchored to the "safe" height
-                right: "0",
-                transform: "translateY(-50%)", // Center it
-              }}
-              className="..."
-            >
-              I stay put
-            </div>
-
-            {/* <div
-              className="fixed right-6 md:right-10 z-[100] flex flex-wrap transition-all duration-300 items-center gap-3"
-              style={{ top: "calc(100svh - 80px)" }}
-            > */}
-
-            <div
-              ref={fabRef} // <--- ATTACH THE REF HERE
-              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
-              style={{
-                // We set a default for Server Side Rendering or if JS fails
-                top: "calc(100svh - 80px)",
-                bottom: "auto",
-              }}
-            >
               {false && (
                 <ActionButton
                   onClick={() => setDebugOverlay(!debugOverlay)}
@@ -708,16 +682,13 @@ export default function PageViewClient({
                 </ActionButton>
               )}
 
-              {/* SIMPLIFICATION 5: Simplified Conditional Button Rendering */}
-              {(isOwner || isPublic) && editOn && (
-                <ActionButton onClick={() => setShowCreateModal(true)}>
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">New post</span>
-                </ActionButton>
-              )}
-
               {isOwner && (
                 <>
+                  <ActionButton onClick={() => setShowCreateModal(true)}>
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">New post</span>
+                  </ActionButton>
+
                   <ActionButton
                     onClick={() => setEditOn(!editOn)}
                     active={editOn}
