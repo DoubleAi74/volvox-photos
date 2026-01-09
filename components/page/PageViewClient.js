@@ -453,10 +453,10 @@ export default function PageViewClient({
           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
         }}
       >
-        <div className="sticky top-0 left-0 right-0 z-20 pt-[0px] px-0 bg-gray-100 shadow-md">
+        <div className="sticky top-[-1px] left-0 right-0 z-20 pt-[0px] px-0 bg-gray-100 shadow-md">
           <div className="">
             <div
-              className="flex items-center justify-center md:justify-start text-2xl font-bold h-[47px] pt-4 pb-3 text-white px-9 "
+              className="flex items-center justify-center md:justify-start text-2xl font-bold h-[48px] pt-4 pb-3 text-white px-9 "
               style={{
                 backgroundColor: activeDashHex || "#ffffff",
                 color: lighten(activeDashHex, 240) || "#000000",
