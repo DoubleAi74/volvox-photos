@@ -609,9 +609,9 @@ export default function PageViewClient({
               style={{ top: "calc(100svh - 80px)" }}
             > */}
             <div
-              className="fixed right-6 md:right-10 z-[100] transition-all duration-300 flex flex-wrap items-center gap-3"
+              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
               style={{
-                top: "max(calc(100dvh - 80px), calc(100vh - 120px))",
+                bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
               }}
             >
               {false && (
