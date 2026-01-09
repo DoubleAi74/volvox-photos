@@ -606,7 +606,7 @@ export default function PageViewClient({
 
             <div
               className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
-              style={{ top: "calc(100dvh - 80px)" }}
+              style={{ top: "calc(100svh - 80px)" }}
             >
               {false && (
                 <ActionButton
