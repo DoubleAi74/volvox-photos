@@ -64,6 +64,7 @@ export default function PageViewClient({
   totalDashboardCount = 0,
   params,
 }) {
+  const visualViewport = useVisualViewport();
   const { usernameTag, pageSlug } = params;
   const { user: currentUser, logout } = useAuth();
   const router = useRouter();
@@ -650,10 +651,27 @@ export default function PageViewClient({
               className="fixed right-6 md:right-10 z-[100] flex flex-wrap transition-all duration-300 items-center gap-3"
               style={{ top: "calc(100svh - 80px)" }}
             > */}
-            <div
+            {/* <div
               className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
               style={{
                 bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+              }}
+            > */}
+            <div
+              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
+              style={{
+                // LOGIC:
+                // If we have the visual viewport data:
+                // 1. Take the current scroll offset (usually 0, but handles zoom/scroll)
+                // 2. Add the current visible height
+                // 3. Subtract the space you want from the bottom (e.g., 80px)
+                // Fallback: standard css for server-side render or non-supporting browsers
+                top: visualViewport
+                  ? `${visualViewport.offsetTop + visualViewport.height - 80}px`
+                  : "auto",
+                bottom: visualViewport
+                  ? "auto"
+                  : "calc(24px + env(safe-area-inset-bottom, 0px))",
               }}
             >
               {false && (
@@ -799,4 +817,40 @@ function LoadingOverlay({
       </div>
     </div>
   );
+}
+
+// --- ADD THIS AT THE BOTTOM OF YOUR FILE ---
+
+function useVisualViewport() {
+  const [viewport, setViewport] = useState(null); // Start null to detect hydration
+
+  useEffect(() => {
+    // 1. Check browser support
+    if (typeof window === "undefined" || !window.visualViewport) return;
+
+    const updateViewport = () => {
+      setViewport({
+        width: window.visualViewport.width,
+        height: window.visualViewport.height,
+        offsetTop: window.visualViewport.offsetTop,
+        offsetLeft: window.visualViewport.offsetLeft,
+        pageTop: window.visualViewport.pageTop,
+        scale: window.visualViewport.scale,
+      });
+    };
+
+    // 2. Initial setting
+    updateViewport();
+
+    // 3. Listeners
+    window.visualViewport.addEventListener("resize", updateViewport);
+    window.visualViewport.addEventListener("scroll", updateViewport);
+
+    return () => {
+      window.visualViewport.removeEventListener("resize", updateViewport);
+      window.visualViewport.removeEventListener("scroll", updateViewport);
+    };
+  }, []);
+
+  return viewport;
 }
