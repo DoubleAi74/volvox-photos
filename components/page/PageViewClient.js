@@ -604,6 +604,36 @@ export default function PageViewClient({
               </Link>
             )}
 
+            {/* <!-- 1. Red Line (50svh) - Label Left --> */}
+            <div
+              style={{ top: "50svh" }}
+              className="fixed left-0 w-full h-[5px] bg-red-500 -translate-y-1/2 z-30 pointer-events-none"
+            >
+              <span className="absolute bottom-2 left-4 bg-white/90 text-red-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-red-100">
+                50svh
+              </span>
+            </div>
+
+            {/* <!-- 2. Blue Line (50lvh) - Label Center --> */}
+            <div
+              style={{ top: "50lvh" }}
+              className="fixed left-0 w-full h-[5px] bg-blue-500 -translate-y-1/2 z-20 pointer-events-none"
+            >
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/90 text-blue-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-blue-100">
+                50lvh
+              </span>
+            </div>
+
+            {/* <!-- 3. Green Line (50vh) - Label Right --> */}
+            <div
+              style={{ top: "50vh" }}
+              className="fixed left-0 w-full h-[5px] bg-green-500 -translate-y-1/2 z-10 pointer-events-none"
+            >
+              <span className="absolute bottom-2 right-4 bg-white/90 text-green-600 text-xs font-bold px-2 py-1 rounded shadow-sm border border-green-100">
+                50vh
+              </span>
+            </div>
+
             {/* <div
               className="fixed right-6 md:right-10 z-[100] flex flex-wrap transition-all duration-300 items-center gap-3"
               style={{ top: "calc(100svh - 80px)" }}
