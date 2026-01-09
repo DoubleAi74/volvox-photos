@@ -634,6 +634,18 @@ export default function PageViewClient({
               </span>
             </div>
 
+            <div
+              style={{
+                position: "fixed",
+                top: "50svh", // Anchored to the "safe" height
+                right: "0",
+                transform: "translateY(-50%)", // Center it
+              }}
+              className="..."
+            >
+              I stay put
+            </div>
+
             {/* <div
               className="fixed right-6 md:right-10 z-[100] flex flex-wrap transition-all duration-300 items-center gap-3"
               style={{ top: "calc(100svh - 80px)" }}
