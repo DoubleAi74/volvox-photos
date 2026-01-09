@@ -125,7 +125,7 @@ export default function LoginPage() {
               src="/background-2560.webp"
               alt=""
               aria-hidden="true"
-              fetchpriority="high"
+              fetchPriority="high"
               decoding="async"
               className="
                 h-full w-full object-cover

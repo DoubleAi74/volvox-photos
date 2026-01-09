@@ -150,31 +150,39 @@ export default function PageViewClient({
     }
   }, [initialPage?.id]);
 
+  const hasScrolledRef = useRef(false);
+
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
+    if (hasScrolledRef.current) return;
 
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
+    window.scrollTo(0, 0);
+
     const scrollToTarget = () => {
-      if (!topInfoRef.current) return;
+      if (hasScrolledRef.current) return;
 
-      const rect = topInfoRef.current.getBoundingClientRect();
-      const scrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
-
-      const headerHeight = 47;
-      const targetY = rect.top + scrollTop - headerHeight + 25;
-
-      window.scrollTo(0, targetY);
+      if (topInfoRef.current) {
+        topInfoRef.current.scrollIntoView({ behavior: "instant" });
+      }
+      hasScrolledRef.current = true;
       setIsSynced(true);
     };
 
-    // iOS needs one frame AFTER layout
-    requestAnimationFrame(() => {
-      requestAnimationFrame(scrollToTarget);
-    });
+    const waitForFontsAndPaint = async () => {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(scrollToTarget);
+      });
+    };
+
+    waitForFontsAndPaint();
   }, []);
 
   const handleBackClick = () => {
@@ -485,7 +493,7 @@ export default function PageViewClient({
 
         <div
           ref={topInfoRef}
-          className="sticky z-10 w-full h-[9px] shadow-sm"
+          className="sticky z-10 w-full h-[9px] shadow-sm scroll-mt-[17px]"
           style={{
             backgroundColor: lighten(activeDashHex, 30) || "#ffffff",
             top: "42px",
@@ -596,18 +604,23 @@ export default function PageViewClient({
               </Link>
             )}
 
-            <div className="fixed bottom-6 right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3">
-              <ActionButton
-                onClick={() => setDebugOverlay(!debugOverlay)}
-                active={debugOverlay}
-                title="Toggle Loading Overlay"
-              >
-                <Eye className="w-5 h-5" />
-                <span className="hidden md:inline">Dev Overlay</span>
-              </ActionButton>
+            <div
+              className="fixed right-6 md:right-10 z-[100] flex flex-wrap items-center gap-3"
+              style={{ top: "calc(100dvh - 80px)" }}
+            >
+              {false && (
+                <ActionButton
+                  onClick={() => setDebugOverlay(!debugOverlay)}
+                  active={debugOverlay}
+                  title="Toggle Loading Overlay"
+                >
+                  <Eye className="w-5 h-5" />
+                  <span className="hidden md:inline">Dev Overlay</span>
+                </ActionButton>
+              )}
 
               {/* SIMPLIFICATION 5: Simplified Conditional Button Rendering */}
-              {(isOwner || isPublic) && (
+              {(isOwner || isPublic) && editOn && (
                 <ActionButton onClick={() => setShowCreateModal(true)}>
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">New post</span>
@@ -726,7 +739,7 @@ function LoadingOverlay({
       >
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
-            {Array.from({ length: Math.max(skeletonCount, 4) }).map((_, i) => (
+            {Array.from({ length: Math.max(skeletonCount) }).map((_, i) => (
               <PostSkeleton
                 key={i}
                 blurDataURL={previewBlurs[i] || ""}

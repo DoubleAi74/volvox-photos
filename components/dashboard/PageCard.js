@@ -108,9 +108,10 @@ export default function PageCard({
   const isUploadingHeic = page.isUploadingHeic || false;
   const isUploadPending = !hasThumbnail && hasBlur && isOptimistic;
 
+  // transition-all duration-400
   const cardContent = (
     <div
-      className={`p-2 rounded-md bg-[#f7f6f3]/50 shadow-md hover:shadow-neumorphic-soft transition-all duration-300 h-full mb-[-10px] ${
+      className={`p-2 pb-[3px] rounded-md bg-neutral-100/60 hover:bg-neutral-200/50 shadow-md   h-full mb-[0px] ${
         !isOptimistic ? "cursor-pointer" : "cursor-default"
       }`}
     >
@@ -160,12 +161,35 @@ export default function PageCard({
           <FileText className="w-8 h-8 text-neumorphic-text" />
         </div>
       )}
-      <div className="flex justify-between items-center mb-1">
-        <h3 className=" px-1 text-sm sm:text-lg font-semibold text-[#5c5c5b]  mb-0 truncate">
+
+      {/* 
+         UPDATED TEXT CONTAINER 
+         1. h-11: Fixed height (~44px) allows for 2 lines of text comfortably.
+         2. items-start: Text starts at top, allowing it to fill down.
+      */}
+      <div className="flex pl-1 pr-1 items-center justify-between gap-1 mt-0 h-8 w-full overflow-hidden">
+        {/* 
+            TITLE 
+            1. flex-1: Takes up ALL space by default.
+            2. min-w-0: Critical flexbox hack to allow text truncation within a flex child.
+            3. line-clamp-2: Allows 2 lines. This is better than shrinking font size.
+            4. leading-snug: Tighter line height helps fit 2 lines cleanly.
+        */}
+        <h3
+          className="flex-1 min-w-0 font-bold text-neutral-800/70 text-sm leading-snug line-clamp-2 break-words"
+          title={page.title} // Tooltip on hover for very long titles
+        >
           {page.title}
         </h3>
+
+        {/* 
+            DESCRIPTION 
+            1. shrink-0: Prevents description from being squashed to 0 width.
+            2. max-w-[45%]: Limits width so it never dominates the title.
+            3. text-right: Aligns neatly to the right.
+        */}
         {page.description && (
-          <p className=" px-2 text-xs sm:text-sm text-neumorphic-text mb-0">
+          <p className="shrink-0 max-w-[45%] text-xs text-neutral-600/70 text-right leading-snug line-clamp-2">
             {page.description}
           </p>
         )}

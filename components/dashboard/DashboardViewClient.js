@@ -16,16 +16,11 @@ import { Plus, LogOut, User as UserIcon, Eye } from "lucide-react";
 import PageCard from "@/components/dashboard/PageCard";
 import CreatePageModal from "@/components/dashboard/CreatePageModal";
 import EditPageModal from "@/components/dashboard/EditPageModal";
-// 1. Next.js Navigation Hooks
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-// import { hexToRgba } from "@/components/dashboard/DashHeader";
 import { lighten, hexToRgba } from "@/components/dashboard/DashHeader";
 import { useTheme } from "@/context/ThemeContext";
-
 import ActionButton from "@/components/ActionButton";
-
 import { useQueue } from "@/lib/useQueue";
-
 import {
   createPage,
   deletePage,
@@ -41,17 +36,10 @@ const PageSkeleton = () => (
   <div className="w-full h-48 bg-gray-200/50 rounded-xl animate-pulse shadow-sm" />
 );
 
-export default function DashboardViewClient({
-  profileUser, // Data passed from server
-  initialPages, // Data passed from server
-}) {
+export default function DashboardViewClient({ profileUser, initialPages }) {
   const { user: currentUser, logout, loading: authLoading } = useAuth();
   const router = useRouter();
-
-  // 1. Grab themeState so we can check for fresh colors
   const { updateTheme, themeState } = useTheme();
-
-  // 2. Initialize URL hooks
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -85,8 +73,6 @@ export default function DashboardViewClient({
     if (pagesRef.current?.length) {
       await reindexPages(pagesRef.current);
     }
-
-    // Reconcile pageCount to ensure it matches actual pages in database
     if (currentUser?.uid) {
       await reconcilePageCount(currentUser.uid);
     }
@@ -104,25 +90,15 @@ export default function DashboardViewClient({
   const [loading, setLoading] = useState(false);
   const [isSynced, setIsSynced] = useState(false);
   const [debugOverlay, setDebugOverlay] = useState(false);
-
-  // UI State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingPage, setEditingPage] = useState(null);
-
-  // 3. Initialize editOn based on presence of ANY 'edit' param
   const [editOn, setEditOn] = useState(searchParams.has("edit"));
 
   const isOwner =
     currentUser && profileUser && currentUser.uid === profileUser.uid;
 
-  // ---------------------------------------------------------
-  // COLOR STATE INITIALIZATION FIX
-  // ---------------------------------------------------------
-
-  // Helper: Check if Context has fresh data for THIS user (Active Session)
   const useLiveContext = themeState.uid === profileUser?.uid;
 
-  // If Context has data, use it (Live). Otherwise, fall back to Server Prop (Stale).
   const [dashHex, setDashHex] = useState(
     useLiveContext && themeState.dashHex
       ? themeState.dashHex
@@ -135,26 +111,16 @@ export default function DashboardViewClient({
       : profileUser?.dashboard?.backHex || "#F4F4F5"
   );
 
-  // ---------------------------------------------------------
-  // SYNC EFFECTS
-  // ---------------------------------------------------------
-
   // Handle Dash Hex Changes
   useEffect(() => {
-    // A. Sync to Global Context immediately so PageClientView sees it instantly
     if (profileUser?.uid) {
       updateTheme(profileUser.uid, dashHex, backHex);
     }
-
-    // B. Stop if the state matches the Server Data (Prevent Loop)
     if (dashHex === profileUser?.dashboard?.dashHex) return;
 
-    // C. Debounce the Database Save
     const handler = setTimeout(async () => {
       if (profileUser?.uid) {
         await updateUserColours(profileUser.uid, "dashboard.dashHex", dashHex);
-
-        // FIX: Wrap refresh in startTransition to prevent loading screen
         startTransition(() => {
           router.refresh();
         });
@@ -166,20 +132,14 @@ export default function DashboardViewClient({
 
   // Handle Back Hex Changes
   useEffect(() => {
-    // A. Sync Context
     if (profileUser?.uid) {
       updateTheme(profileUser.uid, dashHex, backHex);
     }
-
-    // B. Safety Check
     if (backHex === profileUser?.dashboard?.backHex) return;
 
-    // C. Debounce Save
     const handler = setTimeout(async () => {
       if (profileUser?.uid) {
         await updateUserColours(profileUser.uid, "dashboard.backHex", backHex);
-
-        // FIX: Wrap refresh in startTransition to prevent loading screen
         startTransition(() => {
           router.refresh();
         });
@@ -189,36 +149,51 @@ export default function DashboardViewClient({
     return () => clearTimeout(handler);
   }, [backHex, dashHex, profileUser, router, updateTheme]);
 
-  // Improved Scroll Management
+  const secondHeaderRef = useRef(null);
+  const hasScrolledRef = useRef(false);
+
   useLayoutEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "scrollRestoration" in window.history
-    ) {
+    if (typeof window === "undefined") return;
+    if (hasScrolledRef.current) return;
+
+    if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    // Scroll to top immediately
-    window.scrollTo({
-      top: 0,
-      behavior: "instant",
-    });
+    window.scrollTo(0, 0);
 
-    setIsSynced(true);
+    const scrollToTarget = () => {
+      if (hasScrolledRef.current) return;
+
+      if (secondHeaderRef.current) {
+        secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
+      }
+      hasScrolledRef.current = true;
+      setIsSynced(true);
+    };
+
+    const waitForFontsAndPaint = async () => {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(scrollToTarget);
+      });
+    };
+
+    waitForFontsAndPaint();
   }, []);
 
-  // Sync State with URL (Handles Back/Forward buttons)
   useEffect(() => {
     setEditOn(searchParams.has("edit"));
   }, [searchParams]);
 
-  // IMPORTANT: Reconcile server pages with optimistic local state
   useEffect(() => {
     if (!initialPages || initialPages.length === 0) return;
 
     const serverIds = new Set(initialPages.map((p) => p.id));
 
-    // Clean up deleted IDs that the server no longer knows about
     deletedIdsRef.current.forEach((id) => {
       if (!serverIds.has(id)) {
         deletedIdsRef.current.delete(id);
@@ -226,20 +201,16 @@ export default function DashboardViewClient({
     });
 
     setPages((currentLocalPages) => {
-      // If we have skeleton posts, replace them with server data
       if (currentLocalPages.length > 0 && currentLocalPages[0]?.isSkeleton) {
         return initialPages.filter((p) => !deletedIdsRef.current.has(p.id));
       }
 
-      // 1. Filter out deleted pages from server data
       const validServerPages = initialPages.filter(
         (p) => !deletedIdsRef.current.has(p.id)
       );
 
-      // 2. Extract optimistic pages (new/editing/reordering)
       const optimisticPages = currentLocalPages.filter((p) => p.isOptimistic);
 
-      // 3. Index server pages by clientId for reconciliation
       const serverPagesByClientId = new Map();
       validServerPages.forEach((p) => {
         if (p.clientId) {
@@ -247,7 +218,6 @@ export default function DashboardViewClient({
         }
       });
 
-      // 4. Build merged list - prefer server versions when they exist
       const merged = validServerPages.map((serverPage) => {
         const matchingOptimistic = optimisticPages.find(
           (opt) => opt.clientId && opt.clientId === serverPage.clientId
@@ -255,19 +225,16 @@ export default function DashboardViewClient({
         return matchingOptimistic ? serverPage : serverPage;
       });
 
-      // 5. Add optimistic pages that haven't been confirmed by server yet
       optimisticPages.forEach((optPage) => {
         const hasServerVersion =
           optPage.clientId && serverPagesByClientId.has(optPage.clientId);
         const existsById = merged.some((p) => p.id === optPage.id);
 
-        // Only add if server doesn't have this page yet
         if (!hasServerVersion && !existsById) {
           merged.push(optPage);
         }
       });
 
-      // 6. Sort by order_index for stable display
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
   }, []);
@@ -282,13 +249,9 @@ export default function DashboardViewClient({
   };
 
   const toggleEditMode = () => {
-    // 1. Calculate new state locally
     const shouldBeEditing = !editOn;
-
-    // 2. Update UI immediately
     setEditOn(shouldBeEditing);
 
-    // 3. Construct the new URL parameters
     const currentParams = new URLSearchParams(searchParams.toString());
     if (shouldBeEditing) {
       currentParams.set("edit", "true");
@@ -296,7 +259,6 @@ export default function DashboardViewClient({
       currentParams.delete("edit");
     }
 
-    // 4. Update URL silently (Prevents loading.js and race conditions)
     const newUrl = `${pathname}?${currentParams.toString()}`;
     window.history.replaceState(null, "", newUrl);
   };
@@ -308,7 +270,6 @@ export default function DashboardViewClient({
 
     const clientId = crypto.randomUUID();
     const tempId = `temp-${Date.now()}`;
-
     const currentList = pagesRef.current;
 
     const maxOrder =
@@ -317,7 +278,6 @@ export default function DashboardViewClient({
         : 0;
     const newOrderIndex = maxOrder + 1;
 
-    // Generate a temporary slug for the optimistic page
     const tempSlug = `temp-${pageData.title
       .toLowerCase()
       .trim()
@@ -325,15 +285,14 @@ export default function DashboardViewClient({
       .replace(/[^\w-]+/g, "")
       .replace(/--+/g, "-")}-${Date.now()}`;
 
-    // Optimistic page
     const optimisticPage = {
       id: tempId,
       title: pageData.title,
       description: pageData.description,
-      thumbnail: "", // Empty until upload completes
-      blurDataURL: pageData.blurDataURL || "", // Empty for HEIC
+      thumbnail: "",
+      blurDataURL: pageData.blurDataURL || "",
       userId: currentUser.uid,
-      slug: tempSlug, // Temporary slug for PageCard link
+      slug: tempSlug,
       order_index: newOrderIndex,
       created_date: new Date(),
       isOptimistic: true,
@@ -343,23 +302,18 @@ export default function DashboardViewClient({
       isUploadingHeic: pageData.needsServerBlur,
     };
 
-    // Update ref and state immediately
     pagesRef.current = [...currentList, optimisticPage];
     setPages(pagesRef.current);
 
-    // Queue the upload + blur fetch (if needed) + create operation
     addToQueue({
       type: "create",
       actionFn: async () => {
-        // Step 1: Upload the file
         const securePath = `users/${currentUser.uid}/page-thumbnails`;
         const thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
 
-        // Step 2: Get blur (either from postData or fetch from server for HEIC)
         let blurDataURL = pageData.blurDataURL;
 
         if (pageData.needsServerBlur) {
-          // Update optimistic page to show blur is being generated
           setPages((prev) =>
             prev.map((p) =>
               p.id === tempId
@@ -370,7 +324,6 @@ export default function DashboardViewClient({
 
           blurDataURL = await fetchServerBlur(thumbnailUrl);
 
-          // Update optimistic post with blur
           setPages((prev) =>
             prev.map((p) =>
               p.id === tempId ? { ...p, blurDataURL: blurDataURL || "" } : p
@@ -378,7 +331,6 @@ export default function DashboardViewClient({
           );
         }
 
-        // Step 3: Create the page in database
         await createPage({
           title: pageData.title,
           description: pageData.description,
@@ -406,7 +358,6 @@ export default function DashboardViewClient({
 
     const previousPages = [...pages];
 
-    // Optimistic update
     const optimisticPage = {
       ...editingPage,
       title: pageData.title,
@@ -433,7 +384,6 @@ export default function DashboardViewClient({
         let thumbnailUrl = pageData.thumbnail;
         let blurDataURL = pageData.blurDataURL;
 
-        // If there's a new image to upload
         if (pageData.pendingFile) {
           const securePath = `users/${currentUser.uid}/page-thumbnails`;
           thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
@@ -442,7 +392,6 @@ export default function DashboardViewClient({
             blurDataURL = await fetchServerBlur(thumbnailUrl);
           }
 
-          // Update optimistic page with real thumbnail
           setPages((prev) =>
             prev.map((p) =>
               p.id === targetId
@@ -457,7 +406,6 @@ export default function DashboardViewClient({
           );
         }
 
-        // IMPORTANT: Remove non-serializable fields before sending to Firestore
         const { pendingFile, needsServerBlur, ...cleanPageData } = pageData;
 
         await updatePage(
@@ -488,7 +436,6 @@ export default function DashboardViewClient({
       return;
     }
 
-    // Don't try to delete optimistic posts from Firestore
     if (pageData.isOptimistic || pageData.id?.startsWith("temp-")) {
       setPages((currentPages) =>
         currentPages.filter((p) => p.id !== pageData.id)
@@ -496,18 +443,12 @@ export default function DashboardViewClient({
       return;
     }
 
-    // 2. Snapshot for rollback
     const previousPages = [...pages];
-
-    // 3. Mark as deleted optimistically
     deletedIdsRef.current.add(pageData.id);
-
-    // 4. Remove immediately from UI
     setPages((currentPages) =>
       currentPages.filter((p) => p.id !== pageData.id)
     );
 
-    // 5. Queue the actual delete
     addToQueue({
       actionFn: async () => {
         await deletePage(pageData);
@@ -519,10 +460,6 @@ export default function DashboardViewClient({
       },
     });
   };
-
-  // ------------------------------------------------------------------
-  // RENDER
-  // ------------------------------------------------------------------
 
   if (!profileUser) {
     return (
@@ -543,36 +480,32 @@ export default function DashboardViewClient({
         }}
       >
         <div
-          className=" sticky z-50 w-full h-[8px] "
+          className="sticky z-50 w-full h-[8px]"
           style={{
             backgroundColor: backHex || "#ffffff",
             top: "0px",
           }}
         />
 
-        {/* FIXED HEADER */}
-        <div className=" fixed top-0 left-0 right-0 z-20 pt-2 px-0">
+        <div className="fixed top-0 left-0 right-0 z-20 pt-2 px-0">
           <DashHeader
             profileUser={profileUser}
             alpha={1}
-            editTitleOn={editOn} // Passes true if param is 'true' OR 'title'
+            editTitleOn={editOn}
             dashHex={dashHex}
             isSyncing={isSyncing}
           />
         </div>
 
-        {/* CONTENT AREA */}
         <div
           className="pt-[12px]"
           style={{
             backgroundColor: lighten(backHex, -30),
           }}
         >
-          <div className="min-h-[58px] sm:min-h-[78px] "></div>
+          <div className="min-h-[58px] sm:min-h-[78px]"></div>
 
-          {/* Bio / Info Editor */}
-
-          <div className="max-w-8xl mx-auto py-4 ">
+          <div className="max-w-8xl mx-auto py-4">
             <div className="flex">
               <div className="w-full ml-7 mr-9">
                 <DashboardInfoEditor
@@ -586,8 +519,10 @@ export default function DashboardViewClient({
           </div>
         </div>
 
-        {/* STICKY HEADER 2 */}
-        <div className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0">
+        <div
+          ref={secondHeaderRef}
+          className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0 scroll-mt-[45px] sm:scroll-mt-[60px]"
+        >
           <DashHeader
             title={""}
             alpha={1}
@@ -601,10 +536,9 @@ export default function DashboardViewClient({
           />
         </div>
 
-        <div className={`${editOn ? "h-[19px]" : "h-[47px]"}`}></div>
+        <div className={`${editOn ? "h-[12px]" : "h-[40px]"}`}></div>
 
-        {/* PAGES GRID */}
-        <div className="p-3 md:p-6 ">
+        <div className="p-3 md:p-6">
           {loading || pages.length === 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
               {pages.length === 0 && !loading && !isOwner ? (
@@ -621,7 +555,6 @@ export default function DashboardViewClient({
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
               {pages
                 .filter((page) => {
-                  // Client-side filtering: only show private pages if user is owner
                   if (page.isPrivate && !isOwner) {
                     return false;
                   }
@@ -644,13 +577,10 @@ export default function DashboardViewClient({
             </div>
           )}
         </div>
-        {/* Scroll Spacer */}
 
         <div className="p-6 min-h-[50vh]"></div>
 
-        {/* BUTTONS & MODALS */}
         {authLoading ? (
-          /* ---------- Auth Loading (non-interactive) ---------- */
           <div
             className="fixed bottom-6 right-6 z-[100]"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -661,22 +591,21 @@ export default function DashboardViewClient({
             </div>
           </div>
         ) : isOwner ? (
-          /* ---------- Owner Controls ---------- */
           <div
             className="fixed bottom-6 right-6 z-[100] flex flex-wrap items-center gap-3"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            {/* Dev Overlay Toggle */}
-            <ActionButton
-              onClick={() => setDebugOverlay(!debugOverlay)}
-              active={debugOverlay}
-              title="Toggle Loading Overlay"
-            >
-              <Eye className="w-5 h-5" />
-              <span className="hidden md:inline">Dev Overlay</span>
-            </ActionButton>
+            {false && (
+              <ActionButton
+                onClick={() => setDebugOverlay(!debugOverlay)}
+                active={debugOverlay}
+                title="Toggle Loading Overlay"
+              >
+                <Eye className="w-5 h-5" />
+                <span className="hidden md:inline">Dev Overlay</span>
+              </ActionButton>
+            )}
 
-            {/* New Page (only when edit mode is ON) */}
             {editOn && (
               <ActionButton onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-5 h-5" />
@@ -684,48 +613,36 @@ export default function DashboardViewClient({
               </ActionButton>
             )}
 
-            {/* Edit Toggle */}
             <ActionButton onClick={toggleEditMode} active={editOn}>
-              <span className="">
-                {/* pencil icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-                  />
-                </svg>
-              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                />
+              </svg>
               <span className="hidden md:inline">Edit</span>
             </ActionButton>
 
-            {/* Desktop-only user badge */}
             <div className="hidden sm:inline">
-              <ActionButton
-                onClick={() => {
-                  return;
-                }}
-                title="Email"
-              >
+              <ActionButton onClick={() => {}} title="Email">
                 <UserIcon className="w-5 h-5" />
                 <span className="text-sm">{currentUser?.email}</span>
               </ActionButton>
             </div>
 
-            {/* Logout */}
             <ActionButton onClick={handleLogout} title="Log out">
               <LogOut className="w-5 h-5" />
             </ActionButton>
           </div>
         ) : (
-          /* ---------- Logged-out View ---------- */
           <div
             className="fixed bottom-6 right-6 z-[100] flex items-center gap-3"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -742,7 +659,6 @@ export default function DashboardViewClient({
           </div>
         )}
 
-        {/* MODALS */}
         {isOwner && (
           <>
             <CreatePageModal
@@ -781,19 +697,25 @@ function LoadingOverlay({
   previewBlurs,
 }) {
   const PageSkeleton = ({ blurDataURL }) => (
-    <div
-      className="w-full h-48 rounded-xl shadow-sm overflow-hidden relative"
-      style={{
-        backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-      {!blurDataURL && (
-        <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
-      )}
+    <div className="p-2 pb-[3px] rounded-md bg-neutral-100/60 shadow-md h-full mb-[0px]">
+      <div
+        className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
+        style={{
+          backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        {!blurDataURL && (
+          <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
+        )}
+      </div>
+      <div className="flex pl-1 pr-1 items-center justify-between gap-1 mt-0 h-8 w-full overflow-hidden">
+        <div className="h-4 w-3/5 bg-gray-300/50 rounded animate-pulse" />
+        <div className="h-3 w-1/4 bg-gray-300/50 rounded animate-pulse" />
+      </div>
     </div>
   );
 
@@ -804,7 +726,14 @@ function LoadingOverlay({
         backgroundColor: hexToRgba(backHex, 1),
       }}
     >
-      {/* FIXED HEADER */}
+      <div
+        className="sticky z-50 w-full h-[8px]"
+        style={{
+          backgroundColor: backHex || "#ffffff",
+          top: "0px",
+        }}
+      />
+
       <div className="fixed top-0 left-0 right-0 z-20 pt-2 px-0">
         <DashHeader
           profileUser={profileUser}
@@ -815,25 +744,27 @@ function LoadingOverlay({
         />
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="pt-6">
-        <div className="min-h-[100px] sm:min-h-[120px]"></div>
-      </div>
+      <div
+        className="pt-[12px]"
+        style={{
+          backgroundColor: lighten(backHex, -30),
+        }}
+      ></div>
 
-      {/* STICKY HEADER 2 */}
-      <div className="sticky top-[-2px] left-0 right-0 z-10 pt-3 px-0">
+      <div className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0">
         <DashHeader
           title={""}
           alpha={1}
           profileUser={profileUser}
           editColOn={false}
           heightShort={true}
-          dashHex={dashHex}
+          dashHex={lighten(dashHex, 30)}
           backHex={backHex}
         />
       </div>
 
-      {/* PAGES GRID SKELETON */}
+      <div className="h-[65px] sm:h-[80px]"></div>
+
       <div className="p-3 md:p-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
           {Array.from({ length: Math.max(skeletonCount, 8) }).map((_, i) => (
