@@ -46,6 +46,7 @@ export default function PostCard({
   // 2. Setup state to track if image is ready
   const [isLoaded, setIsLoaded] = useState(false);
   const [wasCached, setWasCached] = useState(false);
+  const [deletePrime, setDeletePrime] = useState(false);
   const imageRef = useRef(null);
 
   useLayoutEffect(() => {
@@ -89,6 +90,7 @@ export default function PostCard({
       className={`group relative transition-opacity duration-300 ${
         isOptimistic ? "opacity-75" : "opacity-100"
       }`}
+      onMouseLeave={() => setDeletePrime(false)}
     >
       <div className="p-1 rounded-[2px] bg-neutral-900/30 shadow-md hover:bg-neutral-900/50 transition-all duration-100 cursor-pointer h-full flex flex-col">
         {hasThumbnail || hasBlur || isUploadingHeic ? (
@@ -152,28 +154,40 @@ export default function PostCard({
       </div>
 
       {isOwner && editModeOn && !isOptimistic && (
-        <div className="absolute top-[10px] right-[10px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="group p-2 rounded-[3px] bg-neutral-700/40 shadow-md hover:bg-neutral-700/80 group-hover:text-white "
-          >
-            <Edit3 className="w-4 h-4  text-neutral-100/70 group-hover:text-neutral-100/90 " />
-          </button>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="group p-2 rounded-[3px] bg-[#610e19]/40 shadow-md hover:bg-[#610e19]/80 group-hover:text-white "
-          >
-            <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
-          </button>
-        </div>
+        <>
+          <div className="absolute bottom-[10px] left-[10px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="group p-2 rounded-[3px] bg-neutral-700/70 shadow-md hover:bg-neutral-700/90 group-hover:text-white "
+            >
+              <Edit3 className="w-4 h-4  text-neutral-100/70 group-hover:text-neutral-100/90 " />
+            </button>
+          </div>
+          <div className="absolute top-[10px] right-[10px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!deletePrime) {
+                  setDeletePrime(true);
+                } else {
+                  onDelete();
+                }
+              }}
+              className={`group p-2 rounded-[3px] ${
+                deletePrime
+                  ? "bg-[#610e19]/80 hover:bg-[#610e19]/100"
+                  : "bg-[#610e19]/40 hover:bg-[#610e19]/60"
+              }  shadow-md  group-hover:text-white`}
+            >
+              <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
