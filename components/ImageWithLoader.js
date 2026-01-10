@@ -18,8 +18,8 @@ export default function ImageWithLoader({
   return (
     <div className="relative w-full h-full">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-neumorphic-bg z-10">
-          <div className="w-6 h-6 rounded-full bg-neumorphic-bg shadow-neumorphic-inset animate-pulse" />
+        <div className="absolute inset-0 flex items-center justify-center bg-neutral-800 z-10">
+          <div className="w-6 h-6 rounded-full bg-neutral-700  animate-pulse" />
         </div>
       )}
 

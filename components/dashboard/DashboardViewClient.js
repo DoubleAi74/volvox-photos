@@ -111,6 +111,17 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       : profileUser?.dashboard?.backHex || "#F4F4F5"
   );
 
+  // Helper to refresh without losing scroll position
+  const refreshWithScrollRestore = useCallback(() => {
+    const scrollY = window.scrollY;
+    router.refresh();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    });
+  }, [router]);
+
   // Handle Dash Hex Changes
   useEffect(() => {
     if (profileUser?.uid) {
@@ -122,13 +133,13 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       if (profileUser?.uid) {
         await updateUserColours(profileUser.uid, "dashboard.dashHex", dashHex);
         startTransition(() => {
-          router.refresh();
+          refreshWithScrollRestore();
         });
       }
     }, 1000);
 
     return () => clearTimeout(handler);
-  }, [dashHex, backHex, profileUser, router, updateTheme]);
+  }, [dashHex, backHex, profileUser, refreshWithScrollRestore, updateTheme]);
 
   // Handle Back Hex Changes
   useEffect(() => {
@@ -141,13 +152,13 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       if (profileUser?.uid) {
         await updateUserColours(profileUser.uid, "dashboard.backHex", backHex);
         startTransition(() => {
-          router.refresh();
+          refreshWithScrollRestore();
         });
       }
     }, 1000);
 
     return () => clearTimeout(handler);
-  }, [backHex, dashHex, profileUser, router, updateTheme]);
+  }, [backHex, dashHex, profileUser, refreshWithScrollRestore, updateTheme]);
 
   const secondHeaderRef = useRef(null);
   const hasScrolledRef = useRef(false);
@@ -372,7 +383,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
-  }, []);
+  }, [initialPages]);
 
   const handleLogout = async () => {
     try {
@@ -873,7 +884,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           >
             {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
-            {true && (
+            {false && (
               <ActionButton
                 onClick={() => setDebugOverlay(!debugOverlay)}
                 active={debugOverlay}

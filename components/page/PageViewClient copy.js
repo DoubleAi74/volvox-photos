@@ -110,11 +110,7 @@ export default function PageViewClient({
       await reindexPosts(page.id);
       await reconcilePostCount(page.id);
       const freshPosts = await getPostsForPage(page.id);
-      // Filter out any posts that are still in the deleted set (race condition protection)
-      const filteredPosts = freshPosts.filter(
-        (p) => !deletedIdsRef.current.has(p.id)
-      );
-      setPosts(filteredPosts);
+      setPosts(freshPosts);
     }
   }, [page?.id]);
 
@@ -245,7 +241,7 @@ export default function PageViewClient({
 
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
-  }, [initialPosts]);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -717,7 +713,7 @@ export default function PageViewClient({
                 </ActionButton>
               )}
 
-              {false && (
+              {true && (
                 <ActionButton
                   onClick={() => setDebugOverlay(!debugOverlay)}
                   active={debugOverlay}
