@@ -216,24 +216,26 @@ export default function PageCard({
       )}
 
       {isOwner && editModeOn && !isOptimistic && (
-        <div className="absolute top-4 right-4 flex gap-1 opacity-40 group-hover:opacity-100 transition-all duration-200">
+        <div className="absolute top-[13px] right-[13px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onEdit();
             }}
             className="group p-2 rounded-[3px] bg-neutral-700/40 shadow-md hover:bg-neutral-700/80 group-hover:text-white "
           >
-            <Edit3 className="w-4 h-4  text-neutral-100/60 group-hover:text-neutral-100/90 " />
+            <Edit3 className="w-4 h-4  text-neutral-100/70 group-hover:text-neutral-100/90 " />
           </button>
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onDelete();
             }}
             className="group p-2 rounded-[3px] bg-[#610e19]/40 shadow-md hover:bg-[#610e19]/80 group-hover:text-white "
           >
-            <Trash2 className="w-4 h-4 text-neutral-100/60 group-hover:text-neutral-100/90" />
+            <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
           </button>
         </div>
       )}

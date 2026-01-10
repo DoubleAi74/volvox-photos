@@ -107,7 +107,7 @@ export default function PostCard({
         isOptimistic ? "opacity-75" : "opacity-100"
       }`}
     >
-      <div className="p-1 rounded-md bg-[#3f3e3b]/30 shadow-md hover:shadow-neumorphic-soft transition-all duration-300 cursor-pointer h-full flex flex-col">
+      <div className="p-1 rounded-[2px] bg-neutral-900/30 shadow-md hover:bg-neutral-900/50 transition-all duration-100 cursor-pointer h-full flex flex-col">
         {hasThumbnail || hasBlur || isUploadingHeic ? (
           <div
             className="w-full aspect-[4/3] rounded-sm overflow-hidden relative"
@@ -169,24 +169,26 @@ export default function PostCard({
       </div>
 
       {isOwner && editModeOn && !isOptimistic && (
-        <div className="absolute top-[10px] right-[10px] flex gap-1 opacity-60 group-hover:opacity-100 transition-all duration-200">
+        <div className="absolute top-[10px] right-[10px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onEdit();
             }}
             className="group p-2 rounded-[3px] bg-neutral-700/40 shadow-md hover:bg-neutral-700/80 group-hover:text-white "
           >
-            <Edit3 className="w-4 h-4  text-neutral-100/60 group-hover:text-neutral-100/90 " />
+            <Edit3 className="w-4 h-4  text-neutral-100/70 group-hover:text-neutral-100/90 " />
           </button>
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onDelete();
             }}
             className="group p-2 rounded-[3px] bg-[#610e19]/40 shadow-md hover:bg-[#610e19]/80 group-hover:text-white "
           >
-            <Trash2 className="w-4 h-4 text-neutral-100/60 group-hover:text-neutral-100/90" />
+            <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
           </button>
         </div>
       )}

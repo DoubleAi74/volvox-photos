@@ -658,7 +658,7 @@ export default function PageViewClient({
                 index={2}
               />
             </div>
-            <div className="p-6 min-h-[50dvh]"></div>
+            <div className="p-6 min-h-[70vh]"></div>
 
             <PhotoShowModal
               post={selectedPostForModal}
@@ -819,7 +819,7 @@ function LoadingOverlay({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[9999] p-0 md:px-6 pt-0 pb-0 min-h-screen w-full overflow-hidden"
+      className="fixed inset-0 z-[9999] p-0 md:px-6 pt-0 pb-0 min-h-[150vh] w-full overflow-hidden"
       style={{
         backgroundColor: hexToRgba(activeBackHex, 0.5),
       }}
