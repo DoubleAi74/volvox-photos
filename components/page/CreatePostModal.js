@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 const RichTextEditor = dynamic(() => import("./RichTextEditor"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[150px] rounded-xl bg-neumorphic-bg shadow-neumorphic-inset animate-pulse"></div>
+    <div className="w-full h-[120px] rounded-[3px] bg-white/5 border border-white/10 animate-pulse"></div>
   ),
 });
 
@@ -240,17 +240,17 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
               <label className="block text-sm font-medium text-white/60 mb-2">
                 Description
               </label>
-              <textarea
+              <RichTextEditor
                 value={formData.description}
-                onChange={(e) =>
+                onChange={(content) =>
                   setFormData((prev) => ({
                     ...prev,
-                    description: e.target.value,
+                    description: content,
                   }))
                 }
-                className="w-full px-4 py-2.5 rounded-[3px] bg-white/5 border border-white/10 text-white/90 placeholder-white/30 focus:outline-none focus:border-white/20 focus:bg-white/[0.06] transition-colors duration-150 focus:ring-1 focus:ring-white/10 resize-none"
-                placeholder="Enter post description"
-                rows="2"
+                placeholder="Enter post description..."
+                variant="dark"
+                minHeight="80px"
               />
             </div>
           </form>

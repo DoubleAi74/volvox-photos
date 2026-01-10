@@ -79,3 +79,38 @@ body,
 .ql-toolbar button.ql-active .ql-stroke {
   stroke: #333; /* Darker color on hover/active */
 }
+
+/* Rich text content display (for rendered HTML from Quill) */
+.rich-text-content p {
+  margin: 0.25em 0;
+}
+.rich-text-content p:first-child {
+  margin-top: 0;
+}
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+.rich-text-content ul,
+.rich-text-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.rich-text-content li {
+  margin: 0.125em 0;
+}
+.rich-text-content a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+.rich-text-content a:hover {
+  color: #93c5fd;
+}
+.rich-text-content strong {
+  font-weight: 600;
+}
+.rich-text-content em {
+  font-style: italic;
+}
+.rich-text-content u {
+  text-decoration: underline;
+}

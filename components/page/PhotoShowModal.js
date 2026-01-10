@@ -323,11 +323,16 @@ export default function PhotoShowModal({
 
               {/* FOOTER (scrolls with image) */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-5 py-3 gap-4 bg-neutral-900 border-t border-neutral-800">
-                <div className="text-sm font-light text-neutral-400 leading-relaxed w-full break-words">
-                  {post.description || (
+                {post.description ? (
+                  <div
+                    className="text-sm font-light text-neutral-400 leading-relaxed w-full break-words rich-text-content"
+                    dangerouslySetInnerHTML={{ __html: post.description }}
+                  />
+                ) : (
+                  <div className="text-sm font-light text-neutral-400 leading-relaxed w-full">
                     <span className="italic opacity-50">...</span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
