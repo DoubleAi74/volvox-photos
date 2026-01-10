@@ -6,8 +6,8 @@ import { ThemeContextProvider } from "@/context/ThemeContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "VOLVOX BASE VERSION",
-  description: "Built with Volvox",
+  title: "Volvox Pics",
+  description: "Collect your memories",
 };
 
 export default function RootLayout({ children }) {
