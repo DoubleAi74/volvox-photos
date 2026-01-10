@@ -33,7 +33,7 @@ import ActionButton from "@/components/ActionButton";
 import { useQueue } from "@/lib/useQueue";
 
 const PostSkeleton = ({ blurDataURL }) => (
-  <div className="p-1 rounded-md bg-[#3f3e3b]/30 shadow-md h-full flex flex-col">
+  <div className="p-1 rounded-[2px] bg-neutral-900/30 shadow-md h-full flex flex-col">
     <div
       className="w-full aspect-[4/3] rounded-sm overflow-hidden relative"
       style={{
@@ -45,7 +45,7 @@ const PostSkeleton = ({ blurDataURL }) => (
     >
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
       {!blurDataURL && (
-        <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
+        <div className="absolute inset-0 bg-neutral-200/30 animate-pulse" />
       )}
     </div>
   </div>
@@ -508,13 +508,13 @@ export default function PageViewClient({
         />
 
         <div
-          className="w-full min-h-screen px-4 md:px-5 pt-[0] sm:pt-[56px] pb-0 shadow-xl"
+          className="w-full min-h-screen px-2 sm:px-4 md:px-5 pt-[0] sm:pt-[56px] pb-0 shadow-xl"
           style={{
             backgroundColor: hexToRgba(activeBackHex, 1),
           }}
         >
           {/* Buttons On mobile at top */}
-          <div className=" left-0 w-full pb-[20px] pt-[10px]  flex  sm:!hidden justify-between  px-[5px] z-[100]">
+          <div className=" left-0 w-full pb-[14px] pt-[8px]  flex  sm:!hidden justify-between  px-[5px] z-[100]">
             {usernameTag && (
               <Link
                 href={`/${usernameTag}`}
@@ -628,7 +628,7 @@ export default function PageViewClient({
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 sm:px-2 lg:grid-cols-5 xl:grid-cols-5 gap-[7px] sm:gap-3">
                 {posts.map((post, index) => (
                   <div
                     key={post.id}
@@ -713,7 +713,7 @@ export default function PageViewClient({
                 </ActionButton>
               )}
 
-              {false && (
+              {true && (
                 <ActionButton
                   onClick={() => setDebugOverlay(!debugOverlay)}
                   active={debugOverlay}
@@ -856,13 +856,13 @@ function LoadingOverlay({
       />
 
       <div
-        className="min-h-screen px-4 md:px-5 pt-[31px] pb-0 shadow-xl"
+        className="min-h-screen px-2 sm:px-4 md:px-5 pt-[23px] sm:pt-[31px] pb-0 shadow-xl"
         style={{
           backgroundColor: hexToRgba(activeBackHex, 1),
         }}
       >
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 sm:px-2 lg:grid-cols-5 xl:grid-cols-5 gap-[7px]  sm:gap-3">
             {Array.from({ length: Math.max(skeletonCount) }).map((_, i) => (
               <PostSkeleton
                 key={i}

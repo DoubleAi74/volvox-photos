@@ -7,7 +7,7 @@ import { lighten, hexToRgba } from "@/components/dashboard/DashHeader";
 
 // Updated Skeleton to match the "Actual Post Card" design
 const PostSkeleton = ({ blurDataURL }) => (
-  <div className="p-1 rounded-md bg-[#3f3e3b]/30 shadow-md h-full flex flex-col">
+  <div className="p-1 rounded-[2px] bg-neutral-900/30 shadow-md h-full flex flex-col">
     <div
       className="w-full aspect-[4/3] rounded-sm overflow-hidden relative"
       style={{
@@ -93,7 +93,7 @@ export default function Loading() {
       />
 
       <div
-        className="min-h-screen px-4 md:px-5 pt-[11px] pb-0 shadow-xl"
+        className="min-h-screen px-2 sm:px-4 md:px-5 pt-[23px] sm:pt-[31px] pb-0 shadow-xl"
         style={{
           backgroundColor: hexToRgba(backHex, 1),
         }}
@@ -101,7 +101,7 @@ export default function Loading() {
         {pageTitle && (
           <div className="max-w-7xl mx-auto">
             {/* Posts grid skeleton - matches PageViewClient layout */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 px-2 lg:grid-cols-5 xl:grid-cols-5 gap-3 p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 sm:px-2 lg:grid-cols-5 xl:grid-cols-5 gap-[7px] sm:gap-3 ">
               {Array.from({
                 length: skeletonCount > 0 ? skeletonCount : 10,
               }).map((_, i) => (

@@ -58,23 +58,6 @@ export default function PostCard({
     if (cached) setIsLoaded(true);
   }, [post.thumbnail]);
 
-  // useEffect(() => {
-  //   // 1. Reset state when source changes
-  //   setIsLoaded(false);
-
-  //   // 2. Check if image is ALREADY loaded (e.g. from cache)
-  //   if (imageRef.current?.complete) {
-  //     setIsLoaded(true);
-  //   }
-
-  //   // 3. Safety fallback: Force show after 1.5s if onLoad event is missed
-  //   const safetyTimer = setTimeout(() => {
-  //     if (!isLoaded) setIsLoaded(true);
-  //   }, 1500);
-
-  //   return () => clearTimeout(safetyTimer);
-  // }, [post.thumbnail]);
-
   // Skeleton render
   if (isSkeleton) {
     return (

@@ -160,6 +160,54 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   //     window.history.scrollRestoration = "manual";
   //   }
 
+  //   const scrollToTarget = () => {
+  //     if (hasScrolledRef.current) return;
+  //     if (!secondHeaderRef.current) return;
+
+  //     // Get the element's position relative to the document
+  //     const element = secondHeaderRef.current;
+  //     const elementRect = element.getBoundingClientRect();
+  //     const scrollTop =
+  //       window.pageYOffset || document.documentElement.scrollTop;
+  //     const elementTop = elementRect.top + scrollTop;
+
+  //     // The sticky header offset (matches top-[74px] sm:top-[94px])
+  //     const stickyOffset = window.innerWidth >= 640 ? 94 : 74;
+
+  //     // Scroll so the element sits just below the sticky header
+  //     window.scrollTo({
+  //       top: elementTop - stickyOffset,
+  //       behavior: "instant",
+  //     });
+
+  //     hasScrolledRef.current = true;
+  //     setIsSynced(true);
+  //   };
+
+  //   const waitForFontsAndPaint = async () => {
+  //     if (document.fonts?.ready) {
+  //       await document.fonts.ready;
+  //     }
+
+  //     // Use a small timeout to ensure layout is complete
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(() => {
+  //         scrollToTarget();
+  //       });
+  //     });
+  //   };
+
+  //   waitForFontsAndPaint();
+  // }, []);
+
+  // useLayoutEffect(() => {
+  //   if (typeof window === "undefined") return;
+  //   if (hasScrolledRef.current) return;
+
+  //   if ("scrollRestoration" in window.history) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
   //   window.scrollTo(0, 0);
 
   //   const scrollToTarget = () => {
@@ -185,9 +233,63 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   //   waitForFontsAndPaint();
   // }, []);
 
+  // useLayoutEffect(() => {
+  //   if (typeof window === "undefined") return;
+  //   if (hasScrolledRef.current) return;
+
+  //   if ("scrollRestoration" in window.history) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
+  //   window.scrollTo(0, 0);
+
+  //   const scrollToTarget = () => {
+  //     if (hasScrolledRef.current) return;
+
+  //     if (secondHeaderRef.current) {
+  //       // Use scrollTo with a fixed offset instead of scrollIntoView
+  //       // This prevents re-triggering when the element's position changes
+  //       const rect = secondHeaderRef.current.getBoundingClientRect();
+  //       const absoluteTop = rect.top + window.scrollY;
+  //       const offset = window.innerWidth >= 640 ? 94 : 74; // sm breakpoint offset
+
+  //       window.scrollTo({
+  //         top: absoluteTop - offset,
+  //         behavior: "instant",
+  //       });
+  //     }
+  //     hasScrolledRef.current = true;
+  //     setIsSynced(true);
+  //   };
+
+  //   const waitForFontsAndPaint = async () => {
+  //     if (document.fonts?.ready) {
+  //       await document.fonts.ready;
+  //     }
+
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(scrollToTarget);
+  //     });
+  //   };
+
+  //   waitForFontsAndPaint();
+  // }, []);
+
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     if (hasScrolledRef.current) return;
+
+    // Only scroll on initial navigation, not on search param changes
+    const navigationEntry = performance.getEntriesByType("navigation")[0];
+    const isInitialLoad =
+      navigationEntry?.type === "navigate" ||
+      navigationEntry?.type === "reload";
+
+    if (!isInitialLoad) {
+      hasScrolledRef.current = true;
+      setIsSynced(true);
+      return;
+    }
 
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
@@ -199,16 +301,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       if (hasScrolledRef.current) return;
 
       if (secondHeaderRef.current) {
-        // Use scrollTo with a fixed offset instead of scrollIntoView
-        // This prevents re-triggering when the element's position changes
-        const rect = secondHeaderRef.current.getBoundingClientRect();
-        const absoluteTop = rect.top + window.scrollY;
-        const offset = window.innerWidth >= 640 ? 94 : 74; // sm breakpoint offset
-
-        window.scrollTo({
-          top: absoluteTop - offset,
-          behavior: "instant",
-        });
+        secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
       }
       hasScrolledRef.current = true;
       setIsSynced(true);
@@ -514,7 +607,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   return (
     <>
       <div
-        className="min-h-[100dvh]"
+        className="min-h-[150lvh]"
         style={{
           backgroundColor: hexToRgba(backHex, 1),
           opacity: isSynced && !debugOverlay ? 1 : 0,
@@ -702,7 +795,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
         <div
           ref={secondHeaderRef}
-          className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0 scroll-mt-[45px] sm:scroll-mt-[60px]"
+          className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0 scroll-mt-[45px] sm:scroll-mt-[80px]"
         >
           <DashHeader
             title={""}
@@ -780,6 +873,16 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           >
             {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
+            {true && (
+              <ActionButton
+                onClick={() => setDebugOverlay(!debugOverlay)}
+                active={debugOverlay}
+                title="Toggle Loading Overlay fixed bottom-30 right-40"
+              >
+                <Eye className="w-5 h-5" />
+                <span className="inline">Dev Overlay</span>
+              </ActionButton>
+            )}
             {editOn && (
               <ActionButton onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-5 h-5" />
@@ -875,7 +978,7 @@ function LoadingOverlay({
   previewBlurs,
 }) {
   const PageSkeleton = ({ blurDataURL }) => (
-    <div className="p-2 pb-[3px] rounded-md bg-neutral-100/60 shadow-md h-full mb-[0px]">
+    <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-100/60 shadow-md h-full mb-[0px]">
       <div
         className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
         style={{
@@ -941,7 +1044,7 @@ function LoadingOverlay({
         />
       </div>
 
-      <div className="h-[65px] sm:h-[80px]"></div>
+      <div className="h-[65px] sm:h-[100px]"></div>
 
       <div className="p-3 md:p-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
