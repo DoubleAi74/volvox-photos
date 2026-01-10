@@ -18,7 +18,7 @@ const PostSkeleton = ({ blurDataURL }) => (
       }}
     >
       {/* Shimmer overlay effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-100/10 to-transparent animate-shimmer" />
 
       {/* Subtle loading indicator if no blur data is present */}
       {!blurDataURL && (

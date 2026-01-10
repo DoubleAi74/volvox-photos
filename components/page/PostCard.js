@@ -74,7 +74,7 @@ export default function PostCard({
               backgroundColor: !hasBlur ? "#e5e5e5" : undefined,
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-100/10 to-transparent animate-shimmer" />
             {!hasBlur && (
               <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
             )}
