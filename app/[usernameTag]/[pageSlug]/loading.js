@@ -103,7 +103,7 @@ export default function Loading() {
             {/* Posts grid skeleton - matches PageViewClient layout */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 sm:px-2 lg:grid-cols-5 xl:grid-cols-5 gap-[7px] sm:gap-3 ">
               {Array.from({
-                length: skeletonCount > 0 ? skeletonCount : 10,
+                length: skeletonCount > 0 ? skeletonCount : 0,
               }).map((_, i) => (
                 <PostSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
               ))}
