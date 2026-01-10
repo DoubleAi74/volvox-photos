@@ -152,6 +152,39 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   const secondHeaderRef = useRef(null);
   const hasScrolledRef = useRef(false);
 
+  // useLayoutEffect(() => {
+  //   if (typeof window === "undefined") return;
+  //   if (hasScrolledRef.current) return;
+
+  //   if ("scrollRestoration" in window.history) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
+  //   window.scrollTo(0, 0);
+
+  //   const scrollToTarget = () => {
+  //     if (hasScrolledRef.current) return;
+
+  //     if (secondHeaderRef.current) {
+  //       secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
+  //     }
+  //     hasScrolledRef.current = true;
+  //     setIsSynced(true);
+  //   };
+
+  //   const waitForFontsAndPaint = async () => {
+  //     if (document.fonts?.ready) {
+  //       await document.fonts.ready;
+  //     }
+
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(scrollToTarget);
+  //     });
+  //   };
+
+  //   waitForFontsAndPaint();
+  // }, []);
+
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     if (hasScrolledRef.current) return;
@@ -166,7 +199,16 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       if (hasScrolledRef.current) return;
 
       if (secondHeaderRef.current) {
-        secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
+        // Use scrollTo with a fixed offset instead of scrollIntoView
+        // This prevents re-triggering when the element's position changes
+        const rect = secondHeaderRef.current.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY;
+        const offset = window.innerWidth >= 640 ? 94 : 74; // sm breakpoint offset
+
+        window.scrollTo({
+          top: absoluteTop - offset,
+          behavior: "instant",
+        });
       }
       hasScrolledRef.current = true;
       setIsSynced(true);
@@ -505,9 +547,148 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
         >
           <div className="min-h-[58px] sm:min-h-[78px]"></div>
 
+          {/* Buttons On mobile at top */}
+          <div className=" left-0 w-full pb-[] pt-[10px]  flex  sm:!hidden justify-end  px-4 z-[100]">
+            <div className="flex justify-end gap-3">
+              {isOwner && editOn && (
+                <ActionButton
+                  onClick={() => setShowCreateModal(true)}
+                  title="Create page"
+                >
+                  {/* <Plus className="w-5 h-5" /> */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+                    />
+                  </svg>
+
+                  <span className="hidden sm:inline">New post</span>
+                </ActionButton>
+              )}
+
+              {authLoading ? (
+                <ActionButton
+                  onClick={() => {}}
+                  title="Loading..."
+                  className="pointer-events-none w-[54px] "
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="animate-pulse"
+                  >
+                    <circle cx="3" cy="12" r="3" fill="currentColor" />
+                    <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    <circle cx="21" cy="12" r="3" fill="currentColor" />
+                  </svg>
+                </ActionButton>
+              ) : isOwner ? (
+                <ActionButton
+                  onClick={() => setEditOn(!editOn)}
+                  active={editOn}
+                  title="Toggle edit mode"
+                  className="w-[54px]  "
+                >
+                  {editOn ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                      style={{ transform: "scaleX(-1)" }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                      />
+                    </svg>
+                  )}
+
+                  <span className="hidden md:inline">Edit</span>
+                </ActionButton>
+              ) : (
+                <ActionButton
+                  onClick={() => router.push("/welcome")}
+                  title="Make your page"
+                  className="w-[54px] gap-[2px] px-[8px]"
+                >
+                  <Plus className="w-5 h-5" />
+                  <UserIcon className="w-4 h-4" />
+                </ActionButton>
+              )}
+
+              {authLoading ? (
+                <></>
+              ) : isOwner ? (
+                <ActionButton
+                  onClick={handleLogout}
+                  className="w-[54px]"
+                  title="Log out"
+                >
+                  <LogOut className="w-5 h-5 " />
+                </ActionButton>
+              ) : (
+                <ActionButton
+                  onClick={() => router.push("/login")}
+                  className="w-[54px]"
+                  title="Log in"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                    <polyline points="10 17 15 12 10 7" />
+                    <line x1="15" x2="3" y1="12" y2="12" />
+                  </svg>
+                </ActionButton>
+              )}
+
+              {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+              {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+            </div>
+          </div>
+
           <div className="max-w-8xl mx-auto py-4">
             <div className="flex">
-              <div className="w-full ml-7 mr-9">
+              <div className="w-full mx-4 sm:ml-7 sm:mr-9">
                 <DashboardInfoEditor
                   uid={profileUser.uid}
                   canEdit={isOwner}
@@ -582,29 +763,22 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
         {authLoading ? (
           <div
-            className="fixed bottom-6 right-6 z-[100]"
+            // CHANGE: hidden by default (mobile), block on sm+ (desktop)
+            className="hidden sm:block fixed bottom-6 right-6 z-[100]"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="flex items-center gap-2 h-[44px] px-4 rounded-sm bg-black/30 text-zinc-300 backdrop-blur-[1px] border border-white/10 opacity-60 pointer-events-none">
-              <UserIcon className="w-5 h-5" />
+            <div className="flex items-center gap-2 h-[40px] px-4 rounded-sm bg-black/30 text-zinc-300 backdrop-blur-[1px] border border-white/10 opacity-60 pointer-events-none select-none">
+              <UserIcon className="w-5 h-5 animate-pulse" />
               <span className="text-sm">Loading…</span>
             </div>
           </div>
         ) : isOwner ? (
           <div
-            className="fixed bottom-6 right-6 z-[100] flex flex-wrap items-center gap-3"
+            // CHANGE: hidden by default (mobile), flex on sm+ (desktop)
+            className="hidden sm:flex fixed bottom-6 right-6 z-[100] flex-wrap items-center gap-3"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            {false && (
-              <ActionButton
-                onClick={() => setDebugOverlay(!debugOverlay)}
-                active={debugOverlay}
-                title="Toggle Loading Overlay"
-              >
-                <Eye className="w-5 h-5" />
-                <span className="hidden md:inline">Dev Overlay</span>
-              </ActionButton>
-            )}
+            {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
             {editOn && (
               <ActionButton onClick={() => setShowCreateModal(true)}>
@@ -614,13 +788,16 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
             )}
 
             <ActionButton onClick={toggleEditMode} active={editOn}>
+              {/* Cleaned up: Used one SVG and CSS transform to flip it instead of two separate SVGs */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-5 h-5"
+                className={`w-5 h-5 transition-transform ${
+                  editOn ? "-scale-x-100" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -644,10 +821,11 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           </div>
         ) : (
           <div
-            className="fixed bottom-6 right-6 z-[100] flex items-center gap-3"
+            // CHANGE: hidden by default (mobile), flex on sm+ (desktop)
+            className="hidden sm:flex fixed bottom-6 right-6 z-[100] items-center gap-3"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <ActionButton onClick={() => router.push("/")}>
+            <ActionButton onClick={() => router.push("/welcome")}>
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Create your collection</span>
             </ActionButton>

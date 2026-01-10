@@ -65,7 +65,7 @@ export default function PageViewClient({
   params,
 }) {
   const { usernameTag, pageSlug } = params;
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const { themeState, setOptimisticDashboardData } = useTheme();
 
@@ -514,7 +514,7 @@ export default function PageViewClient({
           }}
         >
           {/* Buttons On mobile at top */}
-          <div className=" left-0 w-full pb-[20px] pt-[10px]  flex  sm:!hidden justify-between  px-[10px] z-[100]">
+          <div className=" left-0 w-full pb-[20px] pt-[10px]  flex  sm:!hidden justify-between  px-[5px] z-[100]">
             {usernameTag && (
               <Link
                 href={`/${usernameTag}`}
@@ -526,7 +526,7 @@ export default function PageViewClient({
                 </ActionButton>
               </Link>
             )}
-            {/* <div className="w-6 h-4 bg-red-400">d</div> */}
+
             <div className="flex justify-end gap-3">
               {(isOwner || isPublic) && editOn && (
                 <ActionButton onClick={() => setShowCreateModal(true)}>
@@ -534,15 +534,50 @@ export default function PageViewClient({
                   <span className="hidden sm:inline">New post</span>
                 </ActionButton>
               )}
-              {/* <div className="w-6 h-4 bg-red-400">s</div> */}
 
-              {isOwner && (
-                <>
-                  <ActionButton
-                    onClick={() => setEditOn(!editOn)}
-                    active={editOn}
-                    title="Toggle edit mode"
+              {authLoading ? (
+                <ActionButton
+                  onClick={() => {}}
+                  title="Loading..."
+                  className="pointer-events-none w-[54px] "
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="animate-pulse"
                   >
+                    <circle cx="3" cy="12" r="3" fill="currentColor" />
+                    <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    <circle cx="21" cy="12" r="3" fill="currentColor" />
+                  </svg>
+                </ActionButton>
+              ) : isOwner ? (
+                <ActionButton
+                  onClick={() => setEditOn(!editOn)}
+                  active={editOn}
+                  title="Toggle edit mode"
+                  className="w-[54px]  "
+                >
+                  {editOn ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                      style={{ transform: "scaleX(-1)" }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                      />
+                    </svg>
+                  ) : (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -557,19 +592,26 @@ export default function PageViewClient({
                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
                       />
                     </svg>
-                    <span className="hidden md:inline">Edit</span>
-                  </ActionButton>
+                  )}
 
-                  {/* <ActionButton onClick={handleLogout} title="Log out">
-                    <LogOut className="w-5 h-5" />
-                  </ActionButton> */}
-                </>
+                  <span className="hidden md:inline">Edit</span>
+                </ActionButton>
+              ) : (
+                <ActionButton
+                  onClick={() => router.push("/welcome")}
+                  title="Create your collection"
+                  className="w-[54px] gap-[2px] px-[8px]"
+                >
+                  <Plus className="w-5 h-5" />
+                  <UserIcon className="w-4 h-4" />
+                </ActionButton>
               )}
 
               {/* <div className="w-6 h-4 bg-red-400">a</div> */}
               {/* <div className="w-6 h-4 bg-red-400">a</div> */}
             </div>
           </div>
+
           <div className="max-w-7xl mx-auto ">
             {/* <div className=" w-full h-5 bg-red-500 sm:!hidden"></div> */}
 
@@ -664,7 +706,7 @@ export default function PageViewClient({
             )}
 
             <div className="hidden sm:flex sm:fixed bottom-6 right-6 md:right-10 z-[100]  flex-wrap items-center gap-3">
-              {!isOwner && isPublic && (
+              {!isOwner && isPublic && editOn && (
                 <ActionButton onClick={() => setShowCreateModal(true)}>
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">New post</span>
@@ -684,31 +726,53 @@ export default function PageViewClient({
 
               {isOwner && (
                 <>
-                  <ActionButton onClick={() => setShowCreateModal(true)}>
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden sm:inline">New post</span>
-                  </ActionButton>
+                  {editOn && (
+                    <ActionButton onClick={() => setShowCreateModal(true)}>
+                      <Plus className="w-5 h-5" />
+                      <span className="hidden sm:inline">New post</span>
+                    </ActionButton>
+                  )}
 
                   <ActionButton
                     onClick={() => setEditOn(!editOn)}
                     active={editOn}
                     title="Toggle edit mode"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-                      />
-                    </svg>
-                    <span className="hidden md:inline">Edit</span>
+                    <>
+                      {editOn ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-5 h-5"
+                          style={{ transform: "scaleX(-1)" }}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                          />
+                        </svg>
+                      )}
+                      <span className="hidden md:inline">Edit</span>
+                    </>
                   </ActionButton>
 
                   <div className="hidden sm:inline">

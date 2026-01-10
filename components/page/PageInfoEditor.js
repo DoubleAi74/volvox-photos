@@ -23,7 +23,7 @@ export default function PageInfoEditor({
   // STYLES
   // ------------------------------------------------------------------
   const structuralStyles =
-    "col-start-1 row-start-1 w-full p-3 text-base leading-relaxed font-sans rounded-sm  break-words whitespace-pre-wrap outline-none resize-none overflow-hidden";
+    "col-start-1 row-start-1 w-full p-3 py-[7px] text-base leading-relaxed font-sans rounded-sm break-words whitespace-pre-wrap outline-none resize-none overflow-hidden";
 
   const transitionStyles =
     "transition-[background-color,border-color,box-shadow] duration-100 ease-in-out";
@@ -83,9 +83,10 @@ export default function PageInfoEditor({
   }
 
   const isEditing = canEdit && editOn;
-  const displayContent = text || serverText || (
-    <span className="invisible">&nbsp;</span>
-  );
+  const currentText = text || serverText || "";
+
+  // Always add trailing space to preserve empty lines
+  const displayContent = currentText ? currentText + "\u00A0" : "\u00A0";
 
   const showSkeleton = loading && !text && !initialData;
 
@@ -96,19 +97,20 @@ export default function PageInfoEditor({
           <div
             className={`${structuralStyles} animate-pulse ${
               isEditing
-                ? "bg-white/70 border-gray-300 text-gray-800"
-                : "bg-white/90 border-transparent text-gray-800 shadow-sm"
+                ? "bg-neutral-100/70 border-neutral-400/70 text-transparent select-none"
+                : "bg-neutral-100/50 border-transparent text-neutral-900/90 shadow-sm"
             }`}
           >
             &nbsp;
           </div>
         ) : (
           <>
+            {/* Ghost div for sizing */}
             <div
               className={`${structuralStyles} ${transitionStyles} ${
                 isEditing
-                  ? "bg-white/70 border-gray-300 text-gray-800"
-                  : "bg-white/50 border-transparent text-gray-800 shadow-sm"
+                  ? "bg-neutral-100/70 border-neutral-400/70 text-transparent select-none"
+                  : "bg-neutral-100/50 border-transparent text-neutral-900/90 shadow-sm"
               }`}
               aria-hidden={isEditing}
             >
@@ -123,7 +125,7 @@ export default function PageInfoEditor({
               className={`
                 ${structuralStyles}
                 absolute inset-0 z-10
-                bg-transparent border-transparent text-gray-800
+                bg-transparent border-transparent text-neutral-800
                 focus:ring-2 focus:ring-blue-100/50
                 ${
                   isEditing
@@ -139,7 +141,7 @@ export default function PageInfoEditor({
                 ${isEditing ? "opacity-100" : "opacity-0"}
               `}
             >
-              <label className="text-xs text-neutral-500 font-medium bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-neutral-100">
+              <label className="text-xs text-neutral-500/60 font-medium bg-white/50 px-1.5 py-0.5 rounded-[2px] shadow-sm border border-neutral-100/50">
                 {saving
                   ? "Saving..."
                   : error ?? (text === serverText ? "Saved" : "Unsaved")}

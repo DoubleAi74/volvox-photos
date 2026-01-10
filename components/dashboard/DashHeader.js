@@ -1,3 +1,4 @@
+//DashHeader.js
 "use client";
 import { useEffect, useState, forwardRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -67,24 +68,6 @@ function DashHeaderInner(
   const [suggestedTag, setSuggestedTag] = useState("");
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  // // B. DEBOUNCED COLOR SAVE
-  // useEffect(() => {
-  //   if (headerColor === initialHex) return;
-
-  //   const timer = setTimeout(async () => {
-  //     if (profileUser) {
-  //       try {
-  //         await changeHexGlobal(profileUser.uid, headerColor);
-  //         router.refresh();
-  //       } catch (error) {
-  //         console.error("Failed to auto-save color:", error);
-  //       }
-  //     }
-  //   }, 500);
-
-  //   return () => clearTimeout(timer);
-  // }, [headerColor, initialHex, profileUser, router]);
 
   useEffect(() => {
     if (profileUser) {
@@ -213,7 +196,7 @@ function DashHeaderInner(
                   <button
                     // Updated to use the Optimistic Handler
                     onClick={toggleTitleEdit}
-                    className={`peer h-9 w-9 mt-[16px] ml-2 mr-4 appearance-none rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm transition-colors duration-150 cursor-pointer ${
+                    className={`peer h-7 w-7 sm:h-9 sm:w-9 mt-[15px] sm:mt-[16px] ml-2 mr-4 appearance-none rounded-sm border border-white/40 bg-black/20 backdrop-blur-sm transition-colors duration-150 cursor-pointer ${
                       titleEditOn
                         ? "bg-black/60 border-black/70"
                         : "hover:bg-black/30"

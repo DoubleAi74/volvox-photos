@@ -169,26 +169,24 @@ export default function PostCard({
       </div>
 
       {isOwner && editModeOn && !isOptimistic && (
-        <div className="absolute top-3 right-3 flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
+        <div className="absolute top-[10px] right-[10px] flex gap-1 opacity-60 group-hover:opacity-100 transition-all duration-200">
           <button
             onClick={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               onEdit();
             }}
-            className="p-2 rounded-lg bg-[#f0efee] shadow-md hover:shadow-neumorphic-pressed"
+            className="group p-2 rounded-[3px] bg-neutral-700/40 shadow-md hover:bg-neutral-700/80 group-hover:text-white "
           >
-            <Edit3 className="w-4 h-4 text-neumorphic-text" />
+            <Edit3 className="w-4 h-4  text-neutral-100/60 group-hover:text-neutral-100/90 " />
           </button>
           <button
             onClick={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               onDelete();
             }}
-            className="p-2 rounded-lg bg-[#f0efee] shadow-md hover:shadow-neumorphic-pressed"
+            className="group p-2 rounded-[3px] bg-[#610e19]/40 shadow-md hover:bg-[#610e19]/80 group-hover:text-white "
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4 text-neutral-100/60 group-hover:text-neutral-100/90" />
           </button>
         </div>
       )}

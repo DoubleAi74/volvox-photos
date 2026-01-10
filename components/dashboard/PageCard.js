@@ -111,13 +111,13 @@ export default function PageCard({
   // transition-all duration-400
   const cardContent = (
     <div
-      className={`p-2 pb-[3px] rounded-md bg-neutral-100/60 hover:bg-neutral-200/50 shadow-md   h-full mb-[0px] ${
+      className={`p-2 pb-[3px] rounded-[4px] bg-neutral-100/60 group-hover:bg-neutral-200/50 shadow-md h-full ${
         !isOptimistic ? "cursor-pointer" : "cursor-default"
       }`}
     >
       {hasThumbnail || hasBlur || isUploadingHeic ? (
         <div
-          className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
+          className="w-full aspect-[4/3] mb-1 rounded-sm shadow-md overflow-hidden relative"
           style={{
             backgroundImage: hasBlur ? `url("${page.blurDataURL}")` : undefined,
             backgroundSize: "cover",
@@ -136,8 +136,8 @@ export default function PageCard({
               fetchPriority={isPriority ? "high" : "auto"}
               onLoad={() => setIsLoaded(true)}
               className={`
-                object-cover
-                ${wasCached ? "" : "transition-opacity duration-300"}
+                object-cover 
+                ${wasCached ? "" : "transition-opacity duration-200"}
                 ${isLoaded ? "opacity-100" : "opacity-0"}
               `}
             />
@@ -157,7 +157,7 @@ export default function PageCard({
           )}
         </div>
       ) : (
-        <div className="w-full aspect-[4/3] shadow-md mb-1 rounded-sm bg-zinc-200/50 flex items-center justify-center">
+        <div className="w-full aspect-[4/3] shadow-sm mb-1 rounded-sm bg-zinc-200/50 flex items-center justify-center">
           <FileText className="w-8 h-8 text-neumorphic-text" />
         </div>
       )}
@@ -216,24 +216,24 @@ export default function PageCard({
       )}
 
       {isOwner && editModeOn && !isOptimistic && (
-        <div className="absolute top-4 right-4 flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
+        <div className="absolute top-4 right-4 flex gap-1 opacity-40 group-hover:opacity-100 transition-all duration-200">
           <button
             onClick={(e) => {
               e.preventDefault();
               onEdit();
             }}
-            className="p-2 rounded-lg bg-[#f0efee] shadow-md hover:shadow-neumorphic-pressed"
+            className="group p-2 rounded-[3px] bg-neutral-700/40 shadow-md hover:bg-neutral-700/80 group-hover:text-white "
           >
-            <Edit3 className="w-4 h-4 text-neumorphic-text" />
+            <Edit3 className="w-4 h-4  text-neutral-100/60 group-hover:text-neutral-100/90 " />
           </button>
           <button
             onClick={(e) => {
               e.preventDefault();
               onDelete();
             }}
-            className="p-2 rounded-lg bg-[#f0efee] shadow-md hover:shadow-neumorphic-pressed"
+            className="group p-2 rounded-[3px] bg-[#610e19]/40 shadow-md hover:bg-[#610e19]/80 group-hover:text-white "
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4 text-neutral-100/60 group-hover:text-neutral-100/90" />
           </button>
         </div>
       )}
