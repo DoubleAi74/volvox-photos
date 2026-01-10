@@ -90,6 +90,9 @@ export default function PageInfoEditor({
 
   const showSkeleton = loading && !text && !initialData;
 
+  // Check if content is empty or just whitespace/empty HTML
+  const isEmpty = !currentText || currentText.trim() === "";
+
   return (
     <section className="w-full block">
       <div className="relative grid grid-cols-1 w-full min-h-[24px]">
@@ -105,7 +108,7 @@ export default function PageInfoEditor({
           </div>
         ) : (
           <>
-            {/* Ghost div for sizing */}
+            {/* Ghost div for sizing (only needed for textarea mode) */}
             <div
               className={`${structuralStyles} ${transitionStyles} ${
                 isEditing
@@ -114,7 +117,17 @@ export default function PageInfoEditor({
               }`}
               aria-hidden={isEditing}
             >
-              {displayContent}
+              {isEditing ? (
+                displayContent
+              ) : (
+                <>
+                  <div
+                    className="rich-text-content"
+                    dangerouslySetInnerHTML={{ __html: currentText }}
+                  />
+                  {"\u00A0"}
+                </>
+              )}
             </div>
 
             <textarea
