@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ImageWithLoader({
   src,
@@ -14,6 +14,11 @@ export default function ImageWithLoader({
   priority = false,
 }) {
   const [isLoading, setIsLoading] = useState(true);
+
+  // Reset loading state when src changes to prevent showing stale images
+  useEffect(() => {
+    setIsLoading(true);
+  }, [src]);
 
   return (
     <div className="relative w-full h-full">
