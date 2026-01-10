@@ -114,7 +114,14 @@ export default function PageViewClient({
       const filteredPosts = freshPosts.filter(
         (p) => !deletedIdsRef.current.has(p.id)
       );
+      // Preserve scroll position when updating posts
+      const scrollY = window.scrollY;
       setPosts(filteredPosts);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollY);
+        });
+      });
     }
   }, [page?.id]);
 

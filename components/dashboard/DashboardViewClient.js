@@ -70,10 +70,8 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
   const handleQueueEmpty = useCallback(async () => {
     console.log("Queue is empty, reindexing pages...");
-    if (pagesRef.current?.length) {
-      await reindexPages(pagesRef.current);
-    }
     if (currentUser?.uid) {
+      await reindexPages(currentUser.uid);
       await reconcilePageCount(currentUser.uid);
     }
   }, [currentUser?.uid]);
