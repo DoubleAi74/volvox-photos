@@ -17,16 +17,16 @@ export default function RichTextEditor({
   const modules = useMemo(
     () => ({
       toolbar: [
+        [{ header: [1, 2, false] }],
         ["bold", "italic", "underline"],
-        [{ list: "ordered" }, { list: "bullet" }],
+        [{ list: "bullet" }],
         ["link"],
-        ["clean"],
       ],
     }),
     []
   );
 
-  const formats = ["bold", "italic", "underline", "list", "link"];
+  const formats = ["header", "bold", "italic", "underline", "list", "link"];
 
   const isDark = variant === "dark";
 
@@ -95,6 +95,52 @@ export default function RichTextEditor({
           #${editorId} .ql-editor::-webkit-scrollbar-thumb {
             background: rgb(255 255 255 / 0.15);
             border-radius: 3px;
+          }
+          /* Header dropdown styles */
+          #${editorId} .ql-toolbar .ql-picker {
+            color: rgb(255 255 255 / 0.5);
+          }
+          #${editorId} .ql-toolbar .ql-picker-label {
+            color: rgb(255 255 255 / 0.5);
+            border: 1px solid transparent;
+            border-radius: 2px;
+          }
+          #${editorId} .ql-toolbar .ql-picker-label:hover {
+            color: rgb(255 255 255 / 0.9);
+            background: rgb(255 255 255 / 0.1);
+          }
+          #${editorId} .ql-toolbar .ql-picker-label .ql-stroke {
+            stroke: rgb(255 255 255 / 0.5);
+          }
+          #${editorId} .ql-toolbar .ql-picker-label:hover .ql-stroke {
+            stroke: rgb(255 255 255 / 0.9);
+          }
+          #${editorId} .ql-toolbar .ql-picker.ql-expanded .ql-picker-label {
+            color: rgb(255 255 255 / 0.9);
+            background: rgb(255 255 255 / 0.1);
+            border-color: rgb(255 255 255 / 0.2);
+          }
+          #${editorId} .ql-toolbar .ql-picker.ql-expanded .ql-picker-label .ql-stroke {
+            stroke: rgb(255 255 255 / 0.9);
+          }
+          #${editorId} .ql-toolbar .ql-picker-options {
+            background: rgb(38 38 38);
+            border: 1px solid rgb(255 255 255 / 0.15);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+            padding: 4px 0;
+          }
+          #${editorId} .ql-toolbar .ql-picker-item {
+            color: rgb(255 255 255 / 0.7);
+            padding: 4px 12px;
+          }
+          #${editorId} .ql-toolbar .ql-picker-item:hover {
+            color: rgb(255 255 255 / 1);
+            background: rgb(255 255 255 / 0.1);
+          }
+          #${editorId} .ql-toolbar .ql-picker-item.ql-selected {
+            color: rgb(255 255 255 / 1);
+            background: rgb(255 255 255 / 0.15);
           }
         `}</style>
         <ReactQuill

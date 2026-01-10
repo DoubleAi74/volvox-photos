@@ -111,7 +111,7 @@ export default function PageCard({
   // transition-all duration-400
   const cardContent = (
     <div
-      className={`p-2 pb-[3px] rounded-[4px] bg-neutral-100/60 group-hover:bg-neutral-200/50 shadow-md h-full ${
+      className={`p-2 pb-[3px] rounded-[4px] bg-neutral-200/60 group-hover:bg-neutral-300/50 shadow-md h-full ${
         !isOptimistic ? "cursor-pointer" : "cursor-default"
       }`}
     >
@@ -176,7 +176,7 @@ export default function PageCard({
             4. leading-snug: Tighter line height helps fit 2 lines cleanly.
         */}
         <h3
-          className="flex-1 min-w-0 font-bold text-neutral-800/70 text-sm leading-snug line-clamp-2 break-words"
+          className="flex-1 min-w-0 font-bold text-neutral-800/80 text-sm leading-snug line-clamp-2 break-words"
           title={page.title} // Tooltip on hover for very long titles
         >
           {page.title}
@@ -189,7 +189,7 @@ export default function PageCard({
             3. text-right: Aligns neatly to the right.
         */}
         {page.description && (
-          <p className="shrink-0 max-w-[45%] text-xs text-neutral-600/70 text-right leading-snug line-clamp-2">
+          <p className="shrink-0 max-w-[45%] text-xs text-neutral-700/80 text-right leading-snug line-clamp-2">
             {page.description}
           </p>
         )}

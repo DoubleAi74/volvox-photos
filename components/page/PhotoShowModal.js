@@ -325,7 +325,7 @@ export default function PhotoShowModal({
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-5 py-3 gap-4 bg-neutral-900 border-t border-neutral-800">
                 {post.description ? (
                   <div
-                    className="  text-sm font-light text-neutral-400 leading-relaxed w-full break-words rich-text-content"
+                    className="text-sm font-light text-neutral-400 leading-relaxed w-full break-words rich-text-content [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:text-neutral-200 [&_h1]:mb-2 [&_h2]:text-xl [&_h2]:font-medium [&_h2]:text-neutral-300 [&_h2]:mb-1"
                     dangerouslySetInnerHTML={{ __html: post.description }}
                   />
                 ) : (

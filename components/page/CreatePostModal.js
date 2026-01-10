@@ -82,6 +82,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
         blurDataURL: blurDataURL || "",
         pendingFile: processedFile,
         needsServerBlur: needsServerBlur,
+        fileName: rawFile.name,
       }));
     } catch (error) {
       console.error("Image processing failed:", error);
@@ -127,7 +128,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
       <div className="bg-neutral-900/90 backdrop-blur-[4px] border border-white/[0.08] rounded-[5px] p-6 w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl shadow-black/50">
         {/* Title and close button */}
         <div className="flex justify-between items-center mb-6 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-white">Create New Post</h2>
+          <h2 className="text-lg font-semibold text-white">Post An Image</h2>
           <button
             onClick={onClose}
             className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-[2px] bg-white/[0.06] hover:bg-white/12 active:bg-white/15 text-white/50 hover:text-white/90 transition-all duration-150"
@@ -146,7 +147,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
             {/* Post title input */}
             <div>
               <label className="block text-sm font-medium text-white/60 mb-2">
-                Post Title
+                Title
               </label>
               <input
                 type="text"
@@ -162,7 +163,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit }) {
             {/* Thumbnail image */}
             <div>
               <label className="block text-sm font-medium text-white/60 mb-2">
-                Thumbnail Image <span className="text-amber-400/80">*</span>
+                Upload <span className="text-amber-400/80">*</span>
               </label>
               <div className="flex items-center gap-4">
                 {formData.pendingFile ? (

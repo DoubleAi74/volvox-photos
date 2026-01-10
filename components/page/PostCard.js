@@ -5,6 +5,7 @@ import Image from "next/image";
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Link from "next/link";
 import {
+  X,
   Edit3,
   Trash2,
   FileText,
@@ -180,11 +181,15 @@ export default function PostCard({
               }}
               className={`group p-2 rounded-[3px] ${
                 deletePrime
-                  ? "bg-[#610e19]/80 hover:bg-[#610e19]/100"
+                  ? "bg-[#610e19]/90 hover:bg-[#610e19]/100"
                   : "bg-[#610e19]/40 hover:bg-[#610e19]/60"
               }  shadow-md  group-hover:text-white`}
             >
-              <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+              {deletePrime ? (
+                <X className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+              ) : (
+                <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+              )}
             </button>
           </div>
         </>

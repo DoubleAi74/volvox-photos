@@ -119,13 +119,15 @@ export default function PageInfoEditor({
             >
               {isEditing ? (
                 displayContent
+              ) : isEmpty ? (
+                <>{"\u00A0"}</>
               ) : (
                 <>
                   <div
                     className="rich-text-content"
                     dangerouslySetInnerHTML={{ __html: currentText }}
                   />
-                  {"\u00A0"}
+                  {/* {"\u00A0"} */}
                 </>
               )}
             </div>

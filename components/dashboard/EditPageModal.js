@@ -97,6 +97,7 @@ export default function EditPageModal({ isOpen, page, onClose, onSubmit }) {
         pendingFile: processedFile,
         needsServerBlur: needsServerBlur,
         thumbnail: "", // Clear old thumbnail URL since we have a new pending file
+        fileName: rawFile.name,
       }));
     } catch (error) {
       console.error("Image processing failed:", error);
@@ -303,14 +304,16 @@ export default function EditPageModal({ isOpen, page, onClose, onSubmit }) {
                     ? "Change Image"
                     : "Select Image"}
                 </label>
+                {formData.fileName && (
+                  <p
+                    className="absolute top-full mt-1.5 text-xs text-white/40 truncate max-w-[180px]"
+                    title={formData.fileName}
+                  >
+                    {formData.fileName}
+                  </p>
+                )}
               </div>
             </div>
-
-            {hasNewPendingFile && (
-              <p className="text-xs text-white/40 mt-2">
-                New image selected. It will be uploaded when you save.
-              </p>
-            )}
           </div>
 
           <div className="flex gap-3 pt-4">
