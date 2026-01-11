@@ -814,7 +814,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           >
             {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
-            {true && (
+            {false && (
               <ActionButton
                 onClick={() => setDebugOverlay(!debugOverlay)}
                 active={debugOverlay}
