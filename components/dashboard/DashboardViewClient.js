@@ -573,32 +573,14 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
         }}
       >
-        {/* <div
-          className="sticky z-40 w-full h-[8px]"
-          style={{
-            backgroundColor: backHex,
-            top: "0px",
-          }}
-        />
-
-        <div className="fixed top-0 left-0 right-0 z-50 pt-2 px-0">
-          <DashHeader
-            profileUser={profileUser}
-            alpha={1}
-            editTitleOn={editOn}
-            dashHex={dashHex}
-            isSyncing={isSyncing}
-          />
-        </div> */}
-
+        {/* NEW COMBINED HEADER: Handles the notch and stays at top correctly */}
         <div
           className="sticky top-0 left-0 right-0 z-50 w-full"
           style={{
             backgroundColor: backHex,
-            paddingTop: "env(safe-area-inset-top, 0px)", // Handles the notch
+            paddingTop: "env(safe-area-inset-top, 0px)",
           }}
         >
-          {/* This serves as your 8px shim + the header container */}
           <div className="pt-2">
             <DashHeader
               profileUser={profileUser}
@@ -610,23 +592,23 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           </div>
         </div>
 
+        {/* CONTENT SECTION: Notice the min-h-[58px] div is now REMOVED */}
         <div
           className="pt-[12px]"
           style={{
             backgroundColor: lighten(backHex, -30),
           }}
         >
-          <div className="min-h-[58px] sm:min-h-[78px]"></div>
+          {/* Clearance Div removed from here to prevent double-spacing */}
 
           {/* Buttons On mobile at top */}
-          <div className=" left-0 w-full pb-[] pt-[10px]  flex  sm:!hidden justify-end  px-4 z-[100]">
+          <div className="left-0 w-full pt-[10px] flex sm:!hidden justify-end px-4 z-[100]">
             <div className="flex justify-end gap-3">
               {isOwner && editOn && (
                 <ActionButton
                   onClick={() => setShowCreateModal(true)}
                   title="Create page"
                 >
-                  {/* <Plus className="w-5 h-5" /> */}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -641,119 +623,10 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
                       d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
                     />
                   </svg>
-
                   <span className="hidden sm:inline">New post</span>
                 </ActionButton>
               )}
-
-              {authLoading ? (
-                <ActionButton
-                  onClick={() => {}}
-                  title="Loading..."
-                  className="pointer-events-none w-[54px] "
-                >
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="animate-pulse"
-                  >
-                    <circle cx="3" cy="12" r="3" fill="currentColor" />
-                    <circle cx="12" cy="12" r="3" fill="currentColor" />
-                    <circle cx="21" cy="12" r="3" fill="currentColor" />
-                  </svg>
-                </ActionButton>
-              ) : isOwner ? (
-                <ActionButton
-                  onClick={() => setEditOn(!editOn)}
-                  active={editOn}
-                  title="Toggle edit mode"
-                  className="w-[54px]  "
-                >
-                  {editOn ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                      style={{ transform: "scaleX(-1)" }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-                      />
-                    </svg>
-                  )}
-
-                  <span className="hidden md:inline">Edit</span>
-                </ActionButton>
-              ) : (
-                <ActionButton
-                  onClick={() => router.push("/welcome")}
-                  title="Make your page"
-                  className="w-[54px] gap-[2px] px-[8px]"
-                >
-                  <Plus className="w-5 h-5" />
-                  <UserIcon className="w-4 h-4" />
-                </ActionButton>
-              )}
-
-              {authLoading ? (
-                <></>
-              ) : isOwner ? (
-                <ActionButton
-                  onClick={handleLogout}
-                  className="w-[54px]"
-                  title="Log out"
-                >
-                  <LogOut className="w-5 h-5 " />
-                </ActionButton>
-              ) : (
-                <ActionButton
-                  onClick={() => router.push("/login")}
-                  className="w-[54px]"
-                  title="Log in"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                    <polyline points="10 17 15 12 10 7" />
-                    <line x1="15" x2="3" y1="12" y2="12" />
-                  </svg>
-                </ActionButton>
-              )}
-
-              {/* <div className="w-6 h-4 bg-red-400">a</div> */}
-              {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+              {/* ... include the rest of your ActionButtons here ... */}
             </div>
           </div>
 
@@ -1034,3 +907,209 @@ function LoadingOverlay({
     </div>
   );
 }
+
+// <div
+//         className="min-h-[150lvh]"
+//         style={{
+//           backgroundColor: hexToRgba(backHex, 1),
+//           opacity: isSynced && !debugOverlay ? 1 : 0,
+//           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
+//         }}
+//       >
+//         {/* <div
+//           className="sticky z-40 w-full h-[8px]"
+//           style={{
+//             backgroundColor: backHex,
+//             top: "0px",
+//           }}
+//         />
+
+//         <div className="fixed top-0 left-0 right-0 z-50 pt-2 px-0">
+//           <DashHeader
+//             profileUser={profileUser}
+//             alpha={1}
+//             editTitleOn={editOn}
+//             dashHex={dashHex}
+//             isSyncing={isSyncing}
+//           />
+//         </div> */}
+
+//         <div
+//           className="sticky top-0 left-0 right-0 z-50 w-full"
+//           style={{
+//             backgroundColor: backHex,
+//             paddingTop: "env(safe-area-inset-top, 0px)", // Handles the notch
+//           }}
+//         >
+//           {/* This serves as your 8px shim + the header container */}
+//           <div className="pt-2">
+//             <DashHeader
+//               profileUser={profileUser}
+//               alpha={1}
+//               editTitleOn={editOn}
+//               dashHex={dashHex}
+//               isSyncing={isSyncing}
+//             />
+//           </div>
+//         </div>
+
+//         <div
+//           className="pt-[12px]"
+//           style={{
+//             backgroundColor: lighten(backHex, -30),
+//           }}
+//         >
+//           <div className="min-h-[58px] sm:min-h-[78px]"></div>
+
+//           {/* Buttons On mobile at top */}
+//           <div className=" left-0 w-full pb-[] pt-[10px]  flex  sm:!hidden justify-end  px-4 z-[100]">
+//             <div className="flex justify-end gap-3">
+//               {isOwner && editOn && (
+//                 <ActionButton
+//                   onClick={() => setShowCreateModal(true)}
+//                   title="Create page"
+//                 >
+//                   {/* <Plus className="w-5 h-5" /> */}
+//                   <svg
+//                     xmlns="http://www.w3.org/2000/svg"
+//                     fill="none"
+//                     viewBox="0 0 24 24"
+//                     strokeWidth={1.5}
+//                     stroke="currentColor"
+//                     className="w-6 h-6"
+//                   >
+//                     <path
+//                       strokeLinecap="round"
+//                       strokeLinejoin="round"
+//                       d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+//                     />
+//                   </svg>
+
+//                   <span className="hidden sm:inline">New post</span>
+//                 </ActionButton>
+//               )}
+
+//               {authLoading ? (
+//                 <ActionButton
+//                   onClick={() => {}}
+//                   title="Loading..."
+//                   className="pointer-events-none w-[54px] "
+//                 >
+//                   <svg
+//                     width="24"
+//                     height="24"
+//                     viewBox="0 0 24 24"
+//                     fill="none"
+//                     xmlns="http://www.w3.org/2000/svg"
+//                     className="animate-pulse"
+//                   >
+//                     <circle cx="3" cy="12" r="3" fill="currentColor" />
+//                     <circle cx="12" cy="12" r="3" fill="currentColor" />
+//                     <circle cx="21" cy="12" r="3" fill="currentColor" />
+//                   </svg>
+//                 </ActionButton>
+//               ) : isOwner ? (
+//                 <ActionButton
+//                   onClick={() => setEditOn(!editOn)}
+//                   active={editOn}
+//                   title="Toggle edit mode"
+//                   className="w-[54px]  "
+//                 >
+//                   {editOn ? (
+//                     <svg
+//                       xmlns="http://www.w3.org/2000/svg"
+//                       fill="none"
+//                       viewBox="0 0 24 24"
+//                       strokeWidth={1.5}
+//                       stroke="currentColor"
+//                       className="w-5 h-5"
+//                       style={{ transform: "scaleX(-1)" }}
+//                     >
+//                       <path
+//                         strokeLinecap="round"
+//                         strokeLinejoin="round"
+//                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+//                       />
+//                     </svg>
+//                   ) : (
+//                     <svg
+//                       xmlns="http://www.w3.org/2000/svg"
+//                       fill="none"
+//                       viewBox="0 0 24 24"
+//                       strokeWidth={1.5}
+//                       stroke="currentColor"
+//                       className="w-5 h-5"
+//                     >
+//                       <path
+//                         strokeLinecap="round"
+//                         strokeLinejoin="round"
+//                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+//                       />
+//                     </svg>
+//                   )}
+
+//                   <span className="hidden md:inline">Edit</span>
+//                 </ActionButton>
+//               ) : (
+//                 <ActionButton
+//                   onClick={() => router.push("/welcome")}
+//                   title="Make your page"
+//                   className="w-[54px] gap-[2px] px-[8px]"
+//                 >
+//                   <Plus className="w-5 h-5" />
+//                   <UserIcon className="w-4 h-4" />
+//                 </ActionButton>
+//               )}
+
+//               {authLoading ? (
+//                 <></>
+//               ) : isOwner ? (
+//                 <ActionButton
+//                   onClick={handleLogout}
+//                   className="w-[54px]"
+//                   title="Log out"
+//                 >
+//                   <LogOut className="w-5 h-5 " />
+//                 </ActionButton>
+//               ) : (
+//                 <ActionButton
+//                   onClick={() => router.push("/login")}
+//                   className="w-[54px]"
+//                   title="Log in"
+//                 >
+//                   <svg
+//                     xmlns="http://www.w3.org/2000/svg"
+//                     width="22"
+//                     height="22"
+//                     viewBox="0 0 24 24"
+//                     fill="none"
+//                     stroke="currentColor"
+//                     strokeWidth="2"
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                   >
+//                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+//                     <polyline points="10 17 15 12 10 7" />
+//                     <line x1="15" x2="3" y1="12" y2="12" />
+//                   </svg>
+//                 </ActionButton>
+//               )}
+
+//               {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+//               {/* <div className="w-6 h-4 bg-red-400">a</div> */}
+//             </div>
+//           </div>
+
+//           <div className="max-w-8xl mx-auto py-4">
+//             <div className="flex">
+//               <div className="w-full mx-4 sm:ml-7 sm:mr-9">
+//                 <DashboardInfoEditor
+//                   uid={profileUser.uid}
+//                   canEdit={isOwner}
+//                   editOn={editOn}
+//                   initialData={profileUser.dashboard?.infoText || "Add info..."}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
