@@ -177,20 +177,18 @@ export default function LoginPage() {
                 <div>
                   <input
                     type="text"
+                    name="name"
+                    autoComplete="name"
                     value={usernameBase}
                     onChange={(e) => setUsernameBase(e.target.value)}
                     placeholder="Full Name (e.g. Adam Aldridge)"
                     className={`
-                      block w-full rounded-sm px-4 py-3
-                      bg-zinc-900/50 text-white placeholder:text-zinc-600
-                      ring-1 ring-white/10 outline-none
-                      focus:ring-white/40
-                      ${
-                        suggestedTag
-                          ? "ring-green-500/30 focus:ring-green-500/50"
-                          : ""
-                      }
-                    `}
+    block w-full rounded-sm px-4 py-3
+    bg-zinc-900/50 text-white placeholder:text-zinc-600
+    ring-1 ring-white/10 outline-none
+    focus:ring-white/40
+    ${suggestedTag ? "ring-green-500/30 focus:ring-green-500/50" : ""}
+  `}
                     required
                   />
 
@@ -220,32 +218,38 @@ export default function LoginPage() {
               )}
 
               {/* EMAIL */}
+
               <input
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
                 className="
-                  block w-full rounded-sm px-4 py-3
-                  bg-zinc-900/50 text-white placeholder:text-zinc-600
-                  ring-1 ring-white/10 outline-none
-                  focus:ring-white/40
-                "
+    block w-full rounded-sm px-4 py-3
+    bg-zinc-900/50 text-white placeholder:text-zinc-600
+    ring-1 ring-white/10 outline-none
+    focus:ring-white/40
+  "
                 required
               />
 
               {/* PASSWORD */}
+
               <input
                 type="password"
+                name="password"
+                autoComplete={isSigningUp ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="
-                  block w-full rounded-sm px-4 py-3
-                  bg-zinc-900/50 text-white placeholder:text-zinc-600
-                  ring-1 ring-white/10 outline-none
-                  focus:ring-white/40
-                "
+    block w-full rounded-sm px-4 py-3
+    bg-zinc-900/50 text-white placeholder:text-zinc-600
+    ring-1 ring-white/10 outline-none
+    focus:ring-white/40
+  "
                 required
               />
 
