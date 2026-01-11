@@ -183,6 +183,7 @@ export default function DashboardInfoEditor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const saveTimer = useRef(null);
+  const serverTextRef = useRef(serverText);
 
   // ------------------------------------------------------------------
   // STYLES
@@ -203,8 +204,10 @@ export default function DashboardInfoEditor({
       try {
         unsub = listenUserDashboard(uid, (data) => {
           const remote = data?.infoText ?? "";
+          // Use ref to get current serverText value (avoids stale closure)
+          setText((prev) => (prev === serverTextRef.current ? remote : prev));
           setServerText(remote);
-          setText((prev) => (prev === serverText ? remote : prev));
+          serverTextRef.current = remote;
           setLoading(false);
         });
       } catch (err) {

@@ -516,9 +516,12 @@ export default function PageViewClient({
             >
               {page ? page.title : <TitleSkeleton />}
               {isSyncing && (
-                <span className="absolute right-4 bottom-2 text-xs ml-4 opacity-70 font-normal">
-                  Saving changes...
-                </span>
+                <>
+                  <span className="hidden sm:block absolute right-4 bottom-2 text-xs ml-4 opacity-70 font-normal">
+                    Saving changes...
+                  </span>
+                  <div className="block sm:hidden absolute right-6 bottom-2 w-7 h-7 border-4 border-white/10 border-t-white/50 rounded-full animate-spin"></div>
+                </>
               )}
             </div>
           </div>
@@ -715,6 +718,109 @@ export default function PageViewClient({
                 index={2}
               />
             </div>
+
+            {/* Buttons On mobile at bottom */}
+            <div className=" left-0 w-full pb-[14px] pt-[14px]  flex  sm:!hidden justify-between  px-[5px] z-[100]">
+              {usernameTag && (
+                <Link
+                  href={`/${usernameTag}`}
+                  onClick={handleBackClick}
+                  prefetch={true}
+                >
+                  <ActionButton
+                    title="Back"
+                    className="  z-[100]"
+                    disabled={isSyncing}
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                    {isSyncing && "Saving"}
+                  </ActionButton>
+                </Link>
+              )}
+
+              <div className="flex justify-end gap-3">
+                {(isOwner || isPublic) && editOn && (
+                  <ActionButton onClick={() => setShowCreateModal(true)}>
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">New post</span>
+                  </ActionButton>
+                )}
+
+                {authLoading ? (
+                  <ActionButton
+                    onClick={() => {}}
+                    title="Loading..."
+                    className="pointer-events-none w-[54px] "
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="animate-pulse"
+                    >
+                      <circle cx="3" cy="12" r="3" fill="currentColor" />
+                      <circle cx="12" cy="12" r="3" fill="currentColor" />
+                      <circle cx="21" cy="12" r="3" fill="currentColor" />
+                    </svg>
+                  </ActionButton>
+                ) : isOwner ? (
+                  <ActionButton
+                    onClick={() => setEditOn(!editOn)}
+                    active={editOn}
+                    title="Toggle edit mode"
+                    className="w-[54px]  "
+                  >
+                    {editOn ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                        style={{ transform: "scaleX(-1)" }}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                        />
+                      </svg>
+                    )}
+
+                    <span className="hidden md:inline">Edit</span>
+                  </ActionButton>
+                ) : (
+                  <ActionButton
+                    onClick={() => router.push("/welcome")}
+                    title="Create your collection"
+                    className="w-[54px] gap-[2px] px-[8px]"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <UserIcon className="w-4 h-4" />
+                  </ActionButton>
+                )}
+              </div>
+            </div>
+
+            {/* Some spacing */}
             <div className="p-6 min-h-[70vh]"></div>
 
             <PhotoShowModal
