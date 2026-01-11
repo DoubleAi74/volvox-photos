@@ -12,7 +12,6 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, LogOut, ArrowLeft, User as UserIcon, Eye } from "lucide-react";
 import {
-  getPostsForPage,
   createPost,
   updatePost,
   deletePost,
@@ -109,19 +108,9 @@ export default function PageViewClient({
     if (page?.id) {
       await reindexPosts(page.id);
       await reconcilePostCount(page.id);
-      const freshPosts = await getPostsForPage(page.id);
-      // Filter out any posts that are still in the deleted set (race condition protection)
-      const filteredPosts = freshPosts.filter(
-        (p) => !deletedIdsRef.current.has(p.id)
-      );
-      // Preserve scroll position when updating posts
-      const scrollY = window.scrollY;
-      setPosts(filteredPosts);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo(0, scrollY);
-        });
-      });
+      // No longer fetching and replacing posts here - optimistic updates
+      // now handle state correctly by updating with real server data
+      // after each create/edit operation completes
     }
   }, [page?.id]);
 
@@ -318,7 +307,7 @@ export default function PageViewClient({
           );
         }
 
-        await createPost({
+        const createdPost = await createPost({
           title: postData.title,
           description: postData.description,
           thumbnail: thumbnailUrl,
@@ -329,6 +318,19 @@ export default function PageViewClient({
           order_index: newOrderIndex,
           clientId: clientId,
         });
+
+        // Replace optimistic post with real server data
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === tempId
+              ? {
+                  ...createdPost,
+                  isOptimistic: false,
+                  isUploadingHeic: false,
+                }
+              : p
+          )
+        );
       },
       onRollback: () => {
         setPosts((prev) => prev.filter((p) => p.id !== tempId));
@@ -343,20 +345,43 @@ export default function PageViewClient({
     setEditingPost(null);
     const previousPosts = [...posts];
 
-    const optimisticPost = {
-      ...editingPost,
-      title: postData.title,
-      description: postData.description,
-      blurDataURL: postData.blurDataURL || editingPost.blurDataURL,
-      order_index: postData.order_index,
-      isOptimistic: true,
-      isUploadingHeic: postData.needsServerBlur && postData.pendingFile,
-    };
+    const oldIndex = editingPost.order_index;
+    const newIndex = postData.order_index;
 
     setPosts((currentPosts) => {
-      const updatedList = currentPosts.map((p) =>
-        p.id === targetId ? optimisticPost : p
-      );
+      // Update all affected posts' order indices (same logic as server)
+      const updatedList = currentPosts.map((p) => {
+        if (p.id === targetId) {
+          // The edited post itself
+          return {
+            ...editingPost,
+            title: postData.title,
+            description: postData.description,
+            blurDataURL: postData.blurDataURL || editingPost.blurDataURL,
+            order_index: newIndex,
+            isOptimistic: true,
+            isUploadingHeic: postData.needsServerBlur && postData.pendingFile,
+          };
+        }
+
+        // Adjust other posts' indices if order changed
+        if (oldIndex !== newIndex) {
+          if (oldIndex > newIndex) {
+            // Moving up: posts between newIndex and oldIndex shift down (+1)
+            if (p.order_index >= newIndex && p.order_index < oldIndex) {
+              return { ...p, order_index: p.order_index + 1 };
+            }
+          } else {
+            // Moving down: posts between oldIndex and newIndex shift up (-1)
+            if (p.order_index > oldIndex && p.order_index <= newIndex) {
+              return { ...p, order_index: p.order_index - 1 };
+            }
+          }
+        }
+
+        return p;
+      });
+
       return updatedList.sort(
         (a, b) => (a.order_index || 0) - (b.order_index || 0)
       );
@@ -397,6 +422,22 @@ export default function PageViewClient({
           },
           previousPosts
         );
+
+        // Clear optimistic flag after successful update and re-sort
+        setPosts((prev) => {
+          const updated = prev.map((p) =>
+            p.id === targetId
+              ? {
+                  ...p,
+                  isOptimistic: false,
+                  isUploadingHeic: false,
+                }
+              : p
+          );
+          return updated.sort(
+            (a, b) => (a.order_index || 0) - (b.order_index || 0)
+          );
+        });
       },
       onRollback: () => {
         setPosts(previousPosts);

@@ -112,12 +112,33 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   // Helper to refresh without losing scroll position
   const refreshWithScrollRestore = useCallback(() => {
     const scrollY = window.scrollY;
-    router.refresh();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
+
+    // Prevent browser from auto-restoring scroll
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    // Lock scroll position by intercepting any scroll attempts
+    let isLocked = true;
+    const lockScroll = () => {
+      if (isLocked) {
         window.scrollTo(0, scrollY);
-      });
-    });
+      }
+    };
+
+    // Add scroll listener to immediately counteract any scroll changes
+    window.addEventListener("scroll", lockScroll, { passive: false });
+
+    router.refresh();
+
+    // Keep the lock active for a reasonable time to cover React's async re-render
+    // Then clean up
+    setTimeout(() => {
+      isLocked = false;
+      window.removeEventListener("scroll", lockScroll);
+      // Final scroll restoration to ensure we're at the right position
+      window.scrollTo(0, scrollY);
+    }, 1000);
   }, [router]);
 
   // Handle Dash Hex Changes
@@ -475,7 +496,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           );
         }
 
-        await createPage({
+        const createdPage = await createPage({
           title: pageData.title,
           description: pageData.description,
           thumbnail: thumbnailUrl,
@@ -486,6 +507,19 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           isPrivate: pageData.isPrivate || false,
           isPublic: pageData.isPublic || false,
         });
+
+        // Replace optimistic page with real server data
+        setPages((prev) =>
+          prev.map((p) =>
+            p.id === tempId
+              ? {
+                  ...createdPage,
+                  isOptimistic: false,
+                  isUploadingHeic: false,
+                }
+              : p
+          )
+        );
       },
       onRollback: () => {
         setPages((prev) => prev.filter((p) => p.id !== tempId));
@@ -502,22 +536,45 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
     const previousPages = [...pages];
 
-    const optimisticPage = {
-      ...editingPage,
-      title: pageData.title,
-      description: pageData.description,
-      blurDataURL: pageData.blurDataURL || editingPage.blurDataURL,
-      order_index: pageData.order_index,
-      isPrivate: pageData.isPrivate,
-      isPublic: pageData.isPublic,
-      isOptimistic: true,
-      isUploadingHeic: pageData.needsServerBlur && pageData.pendingFile,
-    };
+    const oldIndex = editingPage.order_index;
+    const newIndex = pageData.order_index;
 
     setPages((currentPages) => {
-      const updatedList = currentPages.map((p) =>
-        p.id === targetId ? optimisticPage : p
-      );
+      // Update all affected pages' order indices (same logic as server)
+      const updatedList = currentPages.map((p) => {
+        if (p.id === targetId) {
+          // The edited page itself
+          return {
+            ...editingPage,
+            title: pageData.title,
+            description: pageData.description,
+            blurDataURL: pageData.blurDataURL || editingPage.blurDataURL,
+            order_index: newIndex,
+            isPrivate: pageData.isPrivate,
+            isPublic: pageData.isPublic,
+            isOptimistic: true,
+            isUploadingHeic: pageData.needsServerBlur && pageData.pendingFile,
+          };
+        }
+
+        // Adjust other pages' indices if order changed
+        if (oldIndex !== newIndex) {
+          if (oldIndex > newIndex) {
+            // Moving up: pages between newIndex and oldIndex shift down (+1)
+            if (p.order_index >= newIndex && p.order_index < oldIndex) {
+              return { ...p, order_index: p.order_index + 1 };
+            }
+          } else {
+            // Moving down: pages between oldIndex and newIndex shift up (-1)
+            if (p.order_index > oldIndex && p.order_index <= newIndex) {
+              return { ...p, order_index: p.order_index - 1 };
+            }
+          }
+        }
+
+        return p;
+      });
+
       return updatedList.sort(
         (a, b) => (a.order_index || 0) - (b.order_index || 0)
       );
@@ -561,6 +618,22 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           },
           previousPages
         );
+
+        // Clear optimistic flag after successful update and re-sort
+        setPages((prev) => {
+          const updated = prev.map((p) =>
+            p.id === targetId
+              ? {
+                  ...p,
+                  isOptimistic: false,
+                  isUploadingHeic: false,
+                }
+              : p
+          );
+          return updated.sort(
+            (a, b) => (a.order_index || 0) - (b.order_index || 0)
+          );
+        });
       },
       onRollback: () => {
         setPages(previousPages);

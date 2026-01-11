@@ -88,7 +88,7 @@ export default function PostCard({
 
   return (
     <div
-      className={`group relative transition-opacity duration-300 ${
+      className={`group relative transition-opacity duration-200 ${
         isOptimistic ? "opacity-75" : "opacity-100"
       }`}
       onMouseLeave={() => setDeletePrime(false)}
@@ -104,7 +104,7 @@ export default function PostCard({
                 : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
-              backgroundColor: !hasBlur ? "#e5e5e5" : undefined,
+              backgroundColor: !hasBlur ? "#878787" : undefined,
             }}
           >
             {/* 4. Only fade in the image once it reports onLoad */}
@@ -135,15 +135,17 @@ export default function PostCard({
             )}
 
             {isUploadingHeic && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200">
-                <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-                <span className="text-xs text-gray-500 mt-2">Uploading...</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-500/10">
+                <Loader2 className="w-8 h-8 text-neutral-600 animate-spin" />
+                <span className="text-xs text-neutral-600 mt-2">
+                  Uploading HEIC
+                </span>
               </div>
             )}
 
             {isUploadPending && !isUploadingHeic && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-neutral-200/30 border-t-white/40 rounded-full animate-spin" />
               </div>
             )}
           </div>

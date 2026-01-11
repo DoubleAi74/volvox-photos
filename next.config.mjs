@@ -14,6 +14,7 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactCompiler: true,
   // 1. Extend the Client Router Cache duration
   experimental: {
     staleTimes: {
