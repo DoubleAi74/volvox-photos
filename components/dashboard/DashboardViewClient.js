@@ -573,15 +573,15 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
         }}
       >
-        <div
-          className="sticky z-50 w-full h-[8px]"
+        {/* <div
+          className="sticky z-40 w-full h-[8px]"
           style={{
-            backgroundColor: backHex || "#ffffff",
+            backgroundColor: backHex,
             top: "0px",
           }}
         />
 
-        <div className="fixed top-0 left-0 right-0 z-20 pt-2 px-0">
+        <div className="fixed top-0 left-0 right-0 z-50 pt-2 px-0">
           <DashHeader
             profileUser={profileUser}
             alpha={1}
@@ -589,6 +589,25 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
             dashHex={dashHex}
             isSyncing={isSyncing}
           />
+        </div> */}
+
+        <div
+          className="sticky top-0 left-0 right-0 z-50 w-full"
+          style={{
+            backgroundColor: backHex,
+            paddingTop: "env(safe-area-inset-top, 0px)", // Handles the notch
+          }}
+        >
+          {/* This serves as your 8px shim + the header container */}
+          <div className="pt-2">
+            <DashHeader
+              profileUser={profileUser}
+              alpha={1}
+              editTitleOn={editOn}
+              dashHex={dashHex}
+              isSyncing={isSyncing}
+            />
+          </div>
         </div>
 
         <div

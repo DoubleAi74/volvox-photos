@@ -498,14 +498,14 @@ export default function PageViewClient({
   return (
     <>
       <div
-        className="p-0 md:px-6 pt-0 pb-0 min-h-screen w-full"
+        className="p-0 md:px-6 pt-0 pb-0 min-h-[150vh] w-full"
         style={{
           backgroundColor: hexToRgba(activeBackHex, 0.5),
           opacity: isSynced && !debugOverlay ? 1 : 0,
           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
         }}
       >
-        <div className="sticky top-[-1px] left-0 right-0 z-20 pt-[0px] px-0 bg-gray-100 shadow-md">
+        <div className="sticky top-[-1px] left-0 right-0 z-50 pt-[0px] px-0 bg-gray-100 shadow-md">
           <div className="">
             <div
               className="flex items-center justify-center md:justify-start text-2xl font-bold h-[48px] pt-4 pb-3 text-white px-9 "
