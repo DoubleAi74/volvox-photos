@@ -573,7 +573,10 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
         }}
       >
-        {/* NEW COMBINED HEADER: Handles the notch and stays at top correctly */}
+        {/* 
+          FIX: Use 'sticky' instead of 'fixed' + 'env(safe-area-inset-top)' 
+          to handle the iPhone notch/dynamic island and browser bars correctly.
+        */}
         <div
           className="sticky top-0 left-0 right-0 z-50 w-full"
           style={{
@@ -592,16 +595,18 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           </div>
         </div>
 
-        {/* CONTENT SECTION: Notice the min-h-[58px] div is now REMOVED */}
         <div
           className="pt-[12px]"
           style={{
             backgroundColor: lighten(backHex, -30),
           }}
         >
-          {/* Clearance Div removed from here to prevent double-spacing */}
+          {/* 
+            NOTE: The empty 58px clearance div is REMOVED. 
+            The sticky header above now occupies its own space naturally.
+          */}
 
-          {/* Buttons On mobile at top */}
+          {/* Buttons On mobile at top - RESTORED BLOCK */}
           <div className="left-0 w-full pt-[10px] flex sm:!hidden justify-end px-4 z-[100]">
             <div className="flex justify-end gap-3">
               {isOwner && editOn && (
@@ -626,7 +631,92 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
                   <span className="hidden sm:inline">New post</span>
                 </ActionButton>
               )}
-              {/* ... include the rest of your ActionButtons here ... */}
+
+              {authLoading ? (
+                <ActionButton
+                  onClick={() => {}}
+                  title="Loading..."
+                  className="pointer-events-none w-[54px] "
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="animate-pulse"
+                  >
+                    <circle cx="3" cy="12" r="3" fill="currentColor" />
+                    <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    <circle cx="21" cy="12" r="3" fill="currentColor" />
+                  </svg>
+                </ActionButton>
+              ) : isOwner ? (
+                <ActionButton
+                  onClick={() => setEditOn(!editOn)}
+                  active={editOn}
+                  title="Toggle edit mode"
+                  className="w-[54px]"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                    style={{ transform: editOn ? "scaleX(-1)" : "none" }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                    />
+                  </svg>
+                  <span className="hidden md:inline">Edit</span>
+                </ActionButton>
+              ) : (
+                <ActionButton
+                  onClick={() => router.push("/welcome")}
+                  title="Make your page"
+                  className="w-[54px] gap-[2px] px-[8px]"
+                >
+                  <Plus className="w-5 h-5" />
+                  <UserIcon className="w-4 h-4" />
+                </ActionButton>
+              )}
+
+              {authLoading ? null : isOwner ? (
+                <ActionButton
+                  onClick={handleLogout}
+                  className="w-[54px]"
+                  title="Log out"
+                >
+                  <LogOut className="w-5 h-5" />
+                </ActionButton>
+              ) : (
+                <ActionButton
+                  onClick={() => router.push("/login")}
+                  className="w-[54px]"
+                  title="Log in"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                    <polyline points="10 17 15 12 10 7" />
+                    <line x1="15" x2="3" y1="12" y2="12" />
+                  </svg>
+                </ActionButton>
+              )}
             </div>
           </div>
 
@@ -724,7 +814,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           >
             {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
-            {false && (
+            {true && (
               <ActionButton
                 onClick={() => setDebugOverlay(!debugOverlay)}
                 active={debugOverlay}
@@ -1113,3 +1203,97 @@ function LoadingOverlay({
 //             </div>
 //           </div>
 //         </div>
+
+/// FALSE FIX
+
+// function LoadingOverlay({
+//   dashHex,
+//   backHex,
+//   profileUser,
+//   skeletonCount,
+//   previewBlurs,
+// }) {
+//   const PageSkeleton = ({ blurDataURL }) => (
+//     <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-200/60 shadow-md h-full mb-[0px]">
+//       <div
+//         className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
+//         style={{
+//           backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
+//           backgroundSize: "cover",
+//           backgroundPosition: "center",
+//           backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
+//         }}
+//       >
+//         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-100/10 to-transparent animate-shimmer" />
+//         {!blurDataURL && (
+//           <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
+//         )}
+//       </div>
+//       <div className="flex pl-1 pr-1 items-center justify-between gap-1 mt-0 h-8 w-full overflow-hidden">
+//         <div className="h-4 w-3/5 bg-gray-300/50 rounded animate-pulse" />
+//         <div className="h-3 w-1/4 bg-gray-300/50 rounded animate-pulse" />
+//       </div>
+//     </div>
+//   );
+
+//   return (
+//     <div
+//       className="fixed inset-0 z-[9999] min-h-[100dvh] overflow-y-auto"
+//       style={{
+//         backgroundColor: hexToRgba(backHex, 1),
+//       }}
+//     >
+//       {/* 1. FIXED: Top header now uses sticky + safe area inset to match the main view */}
+//       <div
+//         className="sticky top-0 left-0 right-0 z-50 w-full"
+//         style={{
+//           backgroundColor: backHex || "#ffffff",
+//           paddingTop: "env(safe-area-inset-top, 0px)",
+//         }}
+//       >
+//         <div className="pt-2">
+//           <DashHeader
+//             profileUser={profileUser}
+//             alpha={1}
+//             editTitleOn={false}
+//             dashHex={dashHex}
+//             isSyncing={false}
+//           />
+//         </div>
+//       </div>
+
+//       <div
+//         className="pt-[12px]"
+//         style={{
+//           backgroundColor: lighten(backHex, -30),
+//         }}
+//       >
+//         {/* 2. REMOVED: The manual spacer div (h-[65px]) is gone to match the main component */}
+//       </div>
+
+//       {/* 3. The second sticky header remains, positioned based on the first header's height */}
+//       <div className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0">
+//         <DashHeader
+//           title={""}
+//           alpha={1}
+//           profileUser={profileUser}
+//           editColOn={false}
+//           heightShort={true}
+//           dashHex={lighten(dashHex, 30)}
+//           backHex={backHex}
+//         />
+//       </div>
+
+//       {/* 4. Added a small gap to match the main view's height spacing logic */}
+//       <div className="h-[40px]"></div>
+
+//       <div className="p-3 md:p-6">
+//         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
+//           {Array.from({ length: Math.max(skeletonCount, 0) }).map((_, i) => (
+//             <PageSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
