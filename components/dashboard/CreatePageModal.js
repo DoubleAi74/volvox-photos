@@ -33,6 +33,41 @@ export default function CreatePageModal({ isOpen, onClose, onSubmit }) {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // 1. Save scroll position
+    const scrollY = window.scrollY;
+
+    // 2. Measure scrollbar width (prevents layout shift)
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+
+    // 3. Lock body scroll
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    document.body.style.overscrollBehavior = "none";
+
+    return () => {
+      // 4. Restore scroll
+      const y = document.body.style.top;
+
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.paddingRight = "";
+      document.body.style.overscrollBehavior = "";
+
+      if (y) {
+        window.scrollTo(0, parseInt(y, 10) * -1);
+      }
+    };
+  }, [isOpen]);
+
   const handleFileUpload = async (e) => {
     const rawFile = e.target.files[0];
     if (!rawFile) return;
