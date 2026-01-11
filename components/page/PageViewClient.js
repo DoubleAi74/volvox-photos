@@ -573,8 +573,13 @@ export default function PageViewClient({
                 onClick={handleBackClick}
                 prefetch={true}
               >
-                <ActionButton title="Back" className="  z-[100]">
+                <ActionButton
+                  title="Back"
+                  className="  z-[100]"
+                  disabled={isSyncing}
+                >
                   <ArrowLeft className="w-5 h-5" />
+                  {isSyncing && "Saving"}
                 </ActionButton>
               </Link>
             )}
@@ -751,8 +756,10 @@ export default function PageViewClient({
                 <ActionButton
                   title="Back"
                   className="hidden sm:block sm:fixed bottom-6 left-6 md:left-10 z-[100] "
+                  disabled={isSyncing}
                 >
                   <ArrowLeft className="w-5 h-5" />
+                  {isSyncing && "Saving"}
                 </ActionButton>
               </Link>
             )}
