@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useRef, useLayoutEffect } from "react";
-import { FileText, Trash2, Edit3, Loader2 } from "lucide-react";
+import { FileText, Trash2, Edit3, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "@/context/ThemeContext";
@@ -31,6 +31,7 @@ export default function PageCard({
   const [isLoaded, setIsLoaded] = useState(false);
   const [wasCached, setWasCached] = useState(false);
   const imageRef = useRef(null);
+  const [deletePrime, setDeletePrime] = useState(false);
 
   useLayoutEffect(() => {
     const img = imageRef.current;
@@ -122,7 +123,7 @@ export default function PageCard({
             backgroundImage: hasBlur ? `url("${page.blurDataURL}")` : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            backgroundColor: !hasBlur ? "#e5e5e5" : undefined,
+            backgroundColor: !hasBlur ? "#cccccc" : undefined,
           }}
         >
           {hasThumbnail && (
@@ -144,15 +145,17 @@ export default function PageCard({
           )}
 
           {isUploadingHeic && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200">
-              <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
-              <span className="text-xs text-gray-500 mt-2">Uploading...</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-500/10">
+              <Loader2 className="w-8 h-8 text-neutral-600 animate-spin" />
+              <span className="text-xs text-neutral-600 mt-2">
+                Uploading HEIC
+              </span>
             </div>
           )}
 
           {isUploadPending && !isUploadingHeic && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-neutral-200/30 border-t-white/40 rounded-full animate-spin" />
             </div>
           )}
         </div>
@@ -202,6 +205,7 @@ export default function PageCard({
       className={`group relative transition-opacity duration-300 ${
         isOptimistic ? "opacity-75" : "opacity-100"
       }`}
+      onMouseLeave={() => setDeletePrime(false)}
     >
       {!isOptimistic ? (
         <Link
@@ -216,7 +220,7 @@ export default function PageCard({
       )}
 
       {isOwner && editModeOn && !isOptimistic && (
-        <div className="absolute top-[13px] right-[13px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">
+        <div className="absolute top-[15px] right-[19px] flex gap-3 opacity-70 group-hover:opacity-100 transition-all duration-200">
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -231,11 +235,23 @@ export default function PageCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onDelete();
+              if (!deletePrime) {
+                setDeletePrime(true);
+              } else {
+                onDelete();
+              }
             }}
-            className="group p-2 rounded-[3px] bg-[#610e19]/40 shadow-md hover:bg-[#610e19]/80 group-hover:text-white "
+            className={`group p-2 rounded-[3px] ${
+              deletePrime
+                ? "bg-[#610e19]/90 hover:bg-[#610e19]/100"
+                : "bg-[#610e19]/40 hover:bg-[#610e19]/60"
+            }  shadow-md  group-hover:text-white`}
           >
-            <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+            {deletePrime ? (
+              <X className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+            ) : (
+              <Trash2 className="w-4 h-4 text-neutral-100/70 group-hover:text-neutral-100/90" />
+            )}
           </button>
         </div>
       )}

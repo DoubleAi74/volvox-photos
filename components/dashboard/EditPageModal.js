@@ -270,6 +270,8 @@ export default function EditPageModal({ isOpen, page, onClose, onSubmit }) {
                     src={formData.thumbnail}
                     alt="Thumbnail Preview"
                     className="w-full h-full object-cover"
+                    sizes="64px"
+                    priority={true}
                   />
                 </div>
               ) : (

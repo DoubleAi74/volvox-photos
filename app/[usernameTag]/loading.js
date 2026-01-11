@@ -8,7 +8,7 @@ import { lighten, hexToRgba } from "@/components/dashboard/DashHeader";
 
 // 1. Updated Skeleton to match LoadingOverlay exactly
 const PageSkeleton = ({ blurDataURL }) => (
-  <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-100/60 shadow-md h-full mb-[0px]">
+  <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-200/60 shadow-md h-full mb-[0px]">
     <div
       className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
       style={{

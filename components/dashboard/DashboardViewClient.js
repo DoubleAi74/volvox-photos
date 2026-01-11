@@ -182,129 +182,6 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   const secondHeaderRef = useRef(null);
   const hasScrolledRef = useRef(false);
 
-  // useLayoutEffect(() => {
-  //   if (typeof window === "undefined") return;
-  //   if (hasScrolledRef.current) return;
-
-  //   if ("scrollRestoration" in window.history) {
-  //     window.history.scrollRestoration = "manual";
-  //   }
-
-  //   const scrollToTarget = () => {
-  //     if (hasScrolledRef.current) return;
-  //     if (!secondHeaderRef.current) return;
-
-  //     // Get the element's position relative to the document
-  //     const element = secondHeaderRef.current;
-  //     const elementRect = element.getBoundingClientRect();
-  //     const scrollTop =
-  //       window.pageYOffset || document.documentElement.scrollTop;
-  //     const elementTop = elementRect.top + scrollTop;
-
-  //     // The sticky header offset (matches top-[74px] sm:top-[94px])
-  //     const stickyOffset = window.innerWidth >= 640 ? 94 : 74;
-
-  //     // Scroll so the element sits just below the sticky header
-  //     window.scrollTo({
-  //       top: elementTop - stickyOffset,
-  //       behavior: "instant",
-  //     });
-
-  //     hasScrolledRef.current = true;
-  //     setIsSynced(true);
-  //   };
-
-  //   const waitForFontsAndPaint = async () => {
-  //     if (document.fonts?.ready) {
-  //       await document.fonts.ready;
-  //     }
-
-  //     // Use a small timeout to ensure layout is complete
-  //     requestAnimationFrame(() => {
-  //       requestAnimationFrame(() => {
-  //         scrollToTarget();
-  //       });
-  //     });
-  //   };
-
-  //   waitForFontsAndPaint();
-  // }, []);
-
-  // useLayoutEffect(() => {
-  //   if (typeof window === "undefined") return;
-  //   if (hasScrolledRef.current) return;
-
-  //   if ("scrollRestoration" in window.history) {
-  //     window.history.scrollRestoration = "manual";
-  //   }
-
-  //   window.scrollTo(0, 0);
-
-  //   const scrollToTarget = () => {
-  //     if (hasScrolledRef.current) return;
-
-  //     if (secondHeaderRef.current) {
-  //       secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
-  //     }
-  //     hasScrolledRef.current = true;
-  //     setIsSynced(true);
-  //   };
-
-  //   const waitForFontsAndPaint = async () => {
-  //     if (document.fonts?.ready) {
-  //       await document.fonts.ready;
-  //     }
-
-  //     requestAnimationFrame(() => {
-  //       requestAnimationFrame(scrollToTarget);
-  //     });
-  //   };
-
-  //   waitForFontsAndPaint();
-  // }, []);
-
-  // useLayoutEffect(() => {
-  //   if (typeof window === "undefined") return;
-  //   if (hasScrolledRef.current) return;
-
-  //   if ("scrollRestoration" in window.history) {
-  //     window.history.scrollRestoration = "manual";
-  //   }
-
-  //   window.scrollTo(0, 0);
-
-  //   const scrollToTarget = () => {
-  //     if (hasScrolledRef.current) return;
-
-  //     if (secondHeaderRef.current) {
-  //       // Use scrollTo with a fixed offset instead of scrollIntoView
-  //       // This prevents re-triggering when the element's position changes
-  //       const rect = secondHeaderRef.current.getBoundingClientRect();
-  //       const absoluteTop = rect.top + window.scrollY;
-  //       const offset = window.innerWidth >= 640 ? 94 : 74; // sm breakpoint offset
-
-  //       window.scrollTo({
-  //         top: absoluteTop - offset,
-  //         behavior: "instant",
-  //       });
-  //     }
-  //     hasScrolledRef.current = true;
-  //     setIsSynced(true);
-  //   };
-
-  //   const waitForFontsAndPaint = async () => {
-  //     if (document.fonts?.ready) {
-  //       await document.fonts.ready;
-  //     }
-
-  //     requestAnimationFrame(() => {
-  //       requestAnimationFrame(scrollToTarget);
-  //     });
-  //   };
-
-  //   waitForFontsAndPaint();
-  // }, []);
-
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     if (hasScrolledRef.current) return;
@@ -645,13 +522,13 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   const handleDeletePage = async (pageData) => {
     if (!isOwner || !profileUser) return;
 
-    if (
-      !confirm(
-        "Are you sure you want to delete this page? This cannot be undone."
-      )
-    ) {
-      return;
-    }
+    // if (
+    //   !confirm(
+    //     "Are you sure you want to delete this page? This cannot be undone."
+    //   )
+    // ) {
+    //   return;
+    // }
 
     if (pageData.isOptimistic || pageData.id?.startsWith("temp-")) {
       setPages((currentPages) =>
@@ -1060,7 +937,7 @@ function LoadingOverlay({
   previewBlurs,
 }) {
   const PageSkeleton = ({ blurDataURL }) => (
-    <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-100/60 shadow-md h-full mb-[0px]">
+    <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-200/60 shadow-md h-full mb-[0px]">
       <div
         className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
         style={{
