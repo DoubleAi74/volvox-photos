@@ -1007,7 +1007,7 @@ function LoadingOverlay({
 
       <div className="p-3 md:p-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
-          {Array.from({ length: Math.max(skeletonCount, 8) }).map((_, i) => (
+          {Array.from({ length: Math.max(skeletonCount, 0) }).map((_, i) => (
             <PageSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
           ))}
         </div>
