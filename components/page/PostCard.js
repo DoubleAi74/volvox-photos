@@ -13,6 +13,8 @@ import {
   Type,
   File,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -26,10 +28,14 @@ export default function PostCard({
   post,
   onEdit,
   onDelete,
+  onMoveLeft,
+  onMoveRight,
   isOwner,
   editModeOn,
   pageSlug,
   index = 0,
+  isFirst = false,
+  isLast = false,
 }) {
   const ContentIcon = contentTypeIcons[post.content_type] || FileText;
   const isOptimistic = post.isOptimistic || false;
@@ -168,6 +174,51 @@ export default function PostCard({
               className="group p-2 rounded-[3px] bg-neutral-700/70 shadow-md hover:bg-neutral-700/90 group-hover:text-white "
             >
               <Edit3 className="w-4 h-4  text-neutral-100/70 group-hover:text-neutral-100/90 " />
+            </button>
+          </div>
+          <div className="absolute bottom-1/2 translate-y-1/2 w-full px-[10px] flex justify-between opacity-70 group-hover:opacity-100 transition-all duration-200">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isFirst && onMoveLeft) onMoveLeft();
+              }}
+              disabled={isFirst}
+              className={`group p-[2px] rounded-[2px] shadow-sm mb-3 ${
+                isFirst
+                  ? "bg-neutral-700/0 cursor-not-allowed hidden "
+                  : "bg-neutral-700/70 hover:bg-neutral-700/90"
+              }`}
+            >
+              <ChevronLeft
+                className={`w-7 h-7 ${
+                  isFirst
+                    ? "text-neutral-100/30"
+                    : "text-neutral-100/70 group-hover:text-neutral-100/90"
+                }`}
+              />
+            </button>
+            {isFirst && <div> </div>}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isLast && onMoveRight) onMoveRight();
+              }}
+              disabled={isLast}
+              className={`group p-[2px] rounded-[2px] shadow-sm mt-3 ${
+                isLast
+                  ? "bg-neutral-700/30 cursor-not-allowed hidden"
+                  : "bg-neutral-700/70 hover:bg-neutral-700/90"
+              }`}
+            >
+              <ChevronRight
+                className={`w-7 h-7 ${
+                  isLast
+                    ? "text-neutral-100/30"
+                    : "text-neutral-100/70 group-hover:text-neutral-100/90"
+                }`}
+              />
             </button>
           </div>
           <div className="absolute top-[10px] right-[10px] flex gap-1 opacity-70 group-hover:opacity-100 transition-all duration-200">

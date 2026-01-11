@@ -473,6 +473,46 @@ export default function PageViewClient({
     });
   };
 
+  const handleMovePost = (postId, direction) => {
+    if (!isOwner || !page) return;
+
+    const currentIndex = posts.findIndex((p) => p.id === postId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === "left" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= posts.length) return;
+
+    const post = posts[currentIndex];
+    const swapPost = posts[newIndex];
+    const previousPosts = [...posts];
+
+    // Optimistically swap order indices
+    setPosts((currentPosts) => {
+      const updatedList = currentPosts.map((p) => {
+        if (p.id === post.id) {
+          return { ...p, order_index: swapPost.order_index };
+        }
+        if (p.id === swapPost.id) {
+          return { ...p, order_index: post.order_index };
+        }
+        return p;
+      });
+      return updatedList.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    });
+
+    addToQueue({
+      actionFn: async () => {
+        // Update the moved post with its new order_index
+        await updatePost(post.id, { order_index: swapPost.order_index }, previousPosts);
+        await updatePost(swapPost.id, { order_index: post.order_index }, previousPosts);
+      },
+      onRollback: () => {
+        setPosts(previousPosts);
+        alert("Failed to reorder posts.");
+      },
+    });
+  };
+
   // SIMPLIFICATION 2: Removed redundant spread [...posts]
   // `posts` is already an array in state; copying it is unnecessary for read-only ops.
   const currentIndex = posts.findIndex(
@@ -702,7 +742,11 @@ export default function PageViewClient({
                       pageSlug={params.pageSlug}
                       onEdit={() => setEditingPost(post)}
                       onDelete={() => handleDeletePost(post)}
+                      onMoveLeft={() => handleMovePost(post.id, "left")}
+                      onMoveRight={() => handleMovePost(post.id, "right")}
                       index={index}
+                      isFirst={index === 0}
+                      isLast={index === posts.length - 1}
                     />
                   </div>
                 ))}
