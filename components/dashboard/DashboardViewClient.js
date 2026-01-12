@@ -68,13 +68,68 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   const optimisticBlurs = themeState?.optimisticDashboardData?.pageBlurs || [];
   const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
 
+  // Helper to refresh without losing scroll position
+  // const refreshWithScrollRestore = useCallback(() => {
+  //   const scrollY = window.scrollY;
+
+  //   // Prevent browser from auto-restoring scroll
+  //   if ("scrollRestoration" in window.history) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
+  //   // Lock scroll position by intercepting any scroll attempts
+  //   let isLocked = true;
+  //   const lockScroll = () => {
+  //     if (isLocked) {
+  //       window.scrollTo(0, scrollY);
+  //     }
+  //   };
+
+  //   // Add scroll listener to immediately counteract any scroll changes
+  //   window.addEventListener("scroll", lockScroll, { passive: false });
+
+  //   router.refresh();
+
+  //   // Keep the lock active for a reasonable time to cover React's async re-render
+  //   // Then clean up
+  //   setTimeout(() => {
+  //     isLocked = false;
+  //     window.removeEventListener("scroll", lockScroll);
+  //     // Final scroll restoration to ensure we're at the right position
+  //     window.scrollTo(0, scrollY);
+  //   }, 1000);
+  // }, [router]);
+
+  const refreshWithScrollRestore = useCallback(() => {
+    // 1. Capture current position
+    scrollRestorePosRef.current = window.scrollY;
+
+    // 2. Set restoration to manual
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    // 3. Trigger the refresh
+    router.refresh();
+  }, [router]);
+
   const handleQueueEmpty = useCallback(async () => {
-    console.log("Queue is empty, reindexing pages...");
+    console.log("Queue is empty, reindexing and refreshing...");
+
     if (currentUser?.uid) {
+      // 1. Perform your maintenance tasks
       await reindexPages(currentUser.uid);
       await reconcilePageCount(currentUser.uid);
+
+      // 2. Trigger the refresh inside a transition.
+      // This tells Next.js to fetch the new 'initialPages' from the server.
+      // Because we use refreshWithScrollRestore, the scroll-lock logic
+      // will prevent the jump that the useQueue author was afraid of.
+      startTransition(() => {
+        refreshWithScrollRestore();
+      });
     }
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, refreshWithScrollRestore]); // Add
 
   const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
 
@@ -108,38 +163,6 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       ? themeState.backHex
       : profileUser?.dashboard?.backHex || "#F4F4F5"
   );
-
-  // Helper to refresh without losing scroll position
-  const refreshWithScrollRestore = useCallback(() => {
-    const scrollY = window.scrollY;
-
-    // Prevent browser from auto-restoring scroll
-    if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
-
-    // Lock scroll position by intercepting any scroll attempts
-    let isLocked = true;
-    const lockScroll = () => {
-      if (isLocked) {
-        window.scrollTo(0, scrollY);
-      }
-    };
-
-    // Add scroll listener to immediately counteract any scroll changes
-    window.addEventListener("scroll", lockScroll, { passive: false });
-
-    router.refresh();
-
-    // Keep the lock active for a reasonable time to cover React's async re-render
-    // Then clean up
-    setTimeout(() => {
-      isLocked = false;
-      window.removeEventListener("scroll", lockScroll);
-      // Final scroll restoration to ensure we're at the right position
-      window.scrollTo(0, scrollY);
-    }, 1000);
-  }, [router]);
 
   // Handle Dash Hex Changes
   useEffect(() => {
@@ -181,18 +204,20 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
   const secondHeaderRef = useRef(null);
   const hasScrolledRef = useRef(false);
+  const scrollRestorePosRef = useRef(null);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    if (hasScrolledRef.current) return;
 
-    // Only scroll on initial navigation, not on search param changes
+    // 1. Determine if this is a "hard" load vs a "soft" data update
     const navigationEntry = performance.getEntriesByType("navigation")[0];
     const isInitialLoad =
       navigationEntry?.type === "navigate" ||
       navigationEntry?.type === "reload";
 
-    if (!isInitialLoad) {
+    // 2. If it's not the first load OR we've already done the landing scroll, stop here.
+    // This prevents the scrollTo(0,0) from firing during a router.refresh()
+    if (!isInitialLoad || hasScrolledRef.current) {
       hasScrolledRef.current = true;
       setIsSynced(true);
       return;
@@ -202,11 +227,11 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       window.history.scrollRestoration = "manual";
     }
 
+    // Force top for the very first landing
     window.scrollTo(0, 0);
 
     const scrollToTarget = () => {
       if (hasScrolledRef.current) return;
-
       if (secondHeaderRef.current) {
         secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
       }
@@ -218,7 +243,6 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
-
       requestAnimationFrame(() => {
         requestAnimationFrame(scrollToTarget);
       });
@@ -232,16 +256,18 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!initialPages || initialPages.length === 0) return;
+    if (!initialPages) return;
 
     const serverIds = new Set(initialPages.map((p) => p.id));
 
+    // Clean up the deleted IDs ref
     deletedIdsRef.current.forEach((id) => {
       if (!serverIds.has(id)) {
         deletedIdsRef.current.delete(id);
       }
     });
 
+    // 1. Update the state with new data
     setPages((currentLocalPages) => {
       if (currentLocalPages.length > 0 && currentLocalPages[0]?.isSkeleton) {
         return initialPages.filter((p) => !deletedIdsRef.current.has(p.id));
@@ -255,16 +281,11 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
       const serverPagesByClientId = new Map();
       validServerPages.forEach((p) => {
-        if (p.clientId) {
-          serverPagesByClientId.set(p.clientId, p);
-        }
+        if (p.clientId) serverPagesByClientId.set(p.clientId, p);
       });
 
       const merged = validServerPages.map((serverPage) => {
-        const matchingOptimistic = optimisticPages.find(
-          (opt) => opt.clientId && opt.clientId === serverPage.clientId
-        );
-        return matchingOptimistic ? serverPage : serverPage;
+        return serverPage;
       });
 
       optimisticPages.forEach((optPage) => {
@@ -279,6 +300,24 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
+
+    // 2. RESTORE SCROLL POSITION
+    // This logic only runs if refreshWithScrollRestore was called
+    if (scrollRestorePosRef.current !== null) {
+      const savedY = scrollRestorePosRef.current;
+      scrollRestorePosRef.current = null; // Reset so it only happens once
+
+      // Use double requestAnimationFrame to wait for the DOM
+      // to render the newly 'setPages' data before scrolling.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: savedY,
+            behavior: "instant",
+          });
+        });
+      });
+    }
   }, [initialPages]);
 
   const handleLogout = async () => {
@@ -405,6 +444,120 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
     });
   };
 
+  // const handleEditPage = async (pageData) => {
+  //   if (!isOwner || !editingPage) return;
+
+  //   const targetId = editingPage.id;
+  //   setEditingPage(null);
+
+  //   const previousPages = [...pages];
+
+  //   const oldIndex = editingPage.order_index;
+  //   const newIndex = pageData.order_index;
+
+  //   setPages((currentPages) => {
+  //     // Update all affected pages' order indices (same logic as server)
+  //     const updatedList = currentPages.map((p) => {
+  //       if (p.id === targetId) {
+  //         // The edited page itself
+  //         return {
+  //           ...editingPage,
+  //           title: pageData.title,
+  //           description: pageData.description,
+  //           blurDataURL: pageData.blurDataURL || editingPage.blurDataURL,
+  //           order_index: newIndex,
+  //           isPrivate: pageData.isPrivate,
+  //           isPublic: pageData.isPublic,
+  //           isOptimistic: true,
+  //           isUploadingHeic: pageData.needsServerBlur && pageData.pendingFile,
+  //         };
+  //       }
+
+  //       // Adjust other pages' indices if order changed
+  //       if (oldIndex !== newIndex) {
+  //         if (oldIndex > newIndex) {
+  //           // Moving up: pages between newIndex and oldIndex shift down (+1)
+  //           if (p.order_index >= newIndex && p.order_index < oldIndex) {
+  //             return { ...p, order_index: p.order_index + 1 };
+  //           }
+  //         } else {
+  //           // Moving down: pages between oldIndex and newIndex shift up (-1)
+  //           if (p.order_index > oldIndex && p.order_index <= newIndex) {
+  //             return { ...p, order_index: p.order_index - 1 };
+  //           }
+  //         }
+  //       }
+
+  //       return p;
+  //     });
+
+  //     return updatedList.sort(
+  //       (a, b) => (a.order_index || 0) - (b.order_index || 0)
+  //     );
+  //   });
+
+  //   addToQueue({
+  //     actionFn: async () => {
+  //       let thumbnailUrl = pageData.thumbnail;
+  //       let blurDataURL = pageData.blurDataURL;
+
+  //       if (pageData.pendingFile) {
+  //         const securePath = `users/${currentUser.uid}/page-thumbnails`;
+  //         thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
+
+  //         if (pageData.needsServerBlur) {
+  //           blurDataURL = await fetchServerBlur(thumbnailUrl);
+  //         }
+
+  //         setPages((prev) =>
+  //           prev.map((p) =>
+  //             p.id === targetId
+  //               ? {
+  //                   ...p,
+  //                   thumbnail: thumbnailUrl,
+  //                   blurDataURL: blurDataURL || "",
+  //                   isUploadingHeic: false,
+  //                 }
+  //               : p
+  //           )
+  //         );
+  //       }
+
+  //       const { pendingFile, needsServerBlur, ...cleanPageData } = pageData;
+
+  //       await updatePage(
+  //         targetId,
+  //         {
+  //           ...cleanPageData,
+  //           thumbnail: thumbnailUrl,
+  //           blurDataURL: blurDataURL || "",
+  //         },
+  //         previousPages
+  //       );
+
+  //       // Clear optimistic flag after successful update and re-sort
+  //       setPages((prev) => {
+  //         const updated = prev.map((p) =>
+  //           p.id === targetId
+  //             ? {
+  //                 ...p,
+  //                 isOptimistic: false,
+  //                 isUploadingHeic: false,
+  //               }
+  //             : p
+  //         );
+  //         return updated.sort(
+  //           (a, b) => (a.order_index || 0) - (b.order_index || 0)
+  //         );
+  //       });
+  //     },
+  //     onRollback: () => {
+  //       setPages(previousPages);
+  //       alert("Failed to update page.");
+  //     },
+  //   });
+  // };
+
   const handleEditPage = async (pageData) => {
     if (!isOwner || !editingPage) return;
 
@@ -412,43 +565,33 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
     setEditingPage(null);
 
     const previousPages = [...pages];
-
     const oldIndex = editingPage.order_index;
     const newIndex = pageData.order_index;
 
+    // 1. Immediate Optimistic Update (Titles, Descriptions, Re-ordering)
     setPages((currentPages) => {
-      // Update all affected pages' order indices (same logic as server)
       const updatedList = currentPages.map((p) => {
         if (p.id === targetId) {
-          // The edited page itself
           return {
             ...editingPage,
-            title: pageData.title,
-            description: pageData.description,
-            blurDataURL: pageData.blurDataURL || editingPage.blurDataURL,
-            order_index: newIndex,
-            isPrivate: pageData.isPrivate,
-            isPublic: pageData.isPublic,
+            ...pageData,
             isOptimistic: true,
-            isUploadingHeic: pageData.needsServerBlur && pageData.pendingFile,
+            isUploadingHeic: pageData.needsServerBlur && !!pageData.pendingFile,
           };
         }
 
-        // Adjust other pages' indices if order changed
+        // Handle re-order shifting logic
         if (oldIndex !== newIndex) {
           if (oldIndex > newIndex) {
-            // Moving up: pages between newIndex and oldIndex shift down (+1)
             if (p.order_index >= newIndex && p.order_index < oldIndex) {
               return { ...p, order_index: p.order_index + 1 };
             }
           } else {
-            // Moving down: pages between oldIndex and newIndex shift up (-1)
             if (p.order_index > oldIndex && p.order_index <= newIndex) {
               return { ...p, order_index: p.order_index - 1 };
             }
           }
         }
-
         return p;
       });
 
@@ -457,11 +600,13 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       );
     });
 
+    // 2. Add to Sequential Queue
     addToQueue({
       actionFn: async () => {
         let thumbnailUrl = pageData.thumbnail;
         let blurDataURL = pageData.blurDataURL;
 
+        // Handle File Upload if a new image was selected
         if (pageData.pendingFile) {
           const securePath = `users/${currentUser.uid}/page-thumbnails`;
           thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
@@ -470,6 +615,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
             blurDataURL = await fetchServerBlur(thumbnailUrl);
           }
 
+          // Update LOCAL UI with the real URL immediately after upload finishes
           setPages((prev) =>
             prev.map((p) =>
               p.id === targetId
@@ -486,6 +632,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
         const { pendingFile, needsServerBlur, ...cleanPageData } = pageData;
 
+        // Save to Database
         await updatePage(
           targetId,
           {
@@ -496,21 +643,14 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           previousPages
         );
 
-        // Clear optimistic flag after successful update and re-sort
-        setPages((prev) => {
-          const updated = prev.map((p) =>
+        // Final local state cleanup for this specific item
+        setPages((prev) =>
+          prev.map((p) =>
             p.id === targetId
-              ? {
-                  ...p,
-                  isOptimistic: false,
-                  isUploadingHeic: false,
-                }
+              ? { ...p, isOptimistic: false, isUploadingHeic: false }
               : p
-          );
-          return updated.sort(
-            (a, b) => (a.order_index || 0) - (b.order_index || 0)
-          );
-        });
+          )
+        );
       },
       onRollback: () => {
         setPages(previousPages);
@@ -997,303 +1137,3 @@ function LoadingOverlay({
     </div>
   );
 }
-
-// <div
-//         className="min-h-[150lvh]"
-//         style={{
-//           backgroundColor: hexToRgba(backHex, 1),
-//           opacity: isSynced && !debugOverlay ? 1 : 0,
-//           pointerEvents: isSynced && !debugOverlay ? "auto" : "none",
-//         }}
-//       >
-//         {/* <div
-//           className="sticky z-40 w-full h-[8px]"
-//           style={{
-//             backgroundColor: backHex,
-//             top: "0px",
-//           }}
-//         />
-
-//         <div className="fixed top-0 left-0 right-0 z-50 pt-2 px-0">
-//           <DashHeader
-//             profileUser={profileUser}
-//             alpha={1}
-//             editTitleOn={editOn}
-//             dashHex={dashHex}
-//             isSyncing={isSyncing}
-//           />
-//         </div> */}
-
-//         <div
-//           className="sticky top-0 left-0 right-0 z-50 w-full"
-//           style={{
-//             backgroundColor: backHex,
-//             paddingTop: "env(safe-area-inset-top, 0px)", // Handles the notch
-//           }}
-//         >
-//           {/* This serves as your 8px shim + the header container */}
-//           <div className="pt-2">
-//             <DashHeader
-//               profileUser={profileUser}
-//               alpha={1}
-//               editTitleOn={editOn}
-//               dashHex={dashHex}
-//               isSyncing={isSyncing}
-//             />
-//           </div>
-//         </div>
-
-//         <div
-//           className="pt-[12px]"
-//           style={{
-//             backgroundColor: lighten(backHex, -30),
-//           }}
-//         >
-//           <div className="min-h-[58px] sm:min-h-[78px]"></div>
-
-//           {/* Buttons On mobile at top */}
-//           <div className=" left-0 w-full pb-[] pt-[10px]  flex  sm:!hidden justify-end  px-4 z-[100]">
-//             <div className="flex justify-end gap-3">
-//               {isOwner && editOn && (
-//                 <ActionButton
-//                   onClick={() => setShowCreateModal(true)}
-//                   title="Create page"
-//                 >
-//                   {/* <Plus className="w-5 h-5" /> */}
-//                   <svg
-//                     xmlns="http://www.w3.org/2000/svg"
-//                     fill="none"
-//                     viewBox="0 0 24 24"
-//                     strokeWidth={1.5}
-//                     stroke="currentColor"
-//                     className="w-6 h-6"
-//                   >
-//                     <path
-//                       strokeLinecap="round"
-//                       strokeLinejoin="round"
-//                       d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
-//                     />
-//                   </svg>
-
-//                   <span className="hidden sm:inline">New post</span>
-//                 </ActionButton>
-//               )}
-
-//               {authLoading ? (
-//                 <ActionButton
-//                   onClick={() => {}}
-//                   title="Loading..."
-//                   className="pointer-events-none w-[54px] "
-//                 >
-//                   <svg
-//                     width="24"
-//                     height="24"
-//                     viewBox="0 0 24 24"
-//                     fill="none"
-//                     xmlns="http://www.w3.org/2000/svg"
-//                     className="animate-pulse"
-//                   >
-//                     <circle cx="3" cy="12" r="3" fill="currentColor" />
-//                     <circle cx="12" cy="12" r="3" fill="currentColor" />
-//                     <circle cx="21" cy="12" r="3" fill="currentColor" />
-//                   </svg>
-//                 </ActionButton>
-//               ) : isOwner ? (
-//                 <ActionButton
-//                   onClick={() => setEditOn(!editOn)}
-//                   active={editOn}
-//                   title="Toggle edit mode"
-//                   className="w-[54px]  "
-//                 >
-//                   {editOn ? (
-//                     <svg
-//                       xmlns="http://www.w3.org/2000/svg"
-//                       fill="none"
-//                       viewBox="0 0 24 24"
-//                       strokeWidth={1.5}
-//                       stroke="currentColor"
-//                       className="w-5 h-5"
-//                       style={{ transform: "scaleX(-1)" }}
-//                     >
-//                       <path
-//                         strokeLinecap="round"
-//                         strokeLinejoin="round"
-//                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-//                       />
-//                     </svg>
-//                   ) : (
-//                     <svg
-//                       xmlns="http://www.w3.org/2000/svg"
-//                       fill="none"
-//                       viewBox="0 0 24 24"
-//                       strokeWidth={1.5}
-//                       stroke="currentColor"
-//                       className="w-5 h-5"
-//                     >
-//                       <path
-//                         strokeLinecap="round"
-//                         strokeLinejoin="round"
-//                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-//                       />
-//                     </svg>
-//                   )}
-
-//                   <span className="hidden md:inline">Edit</span>
-//                 </ActionButton>
-//               ) : (
-//                 <ActionButton
-//                   onClick={() => router.push("/welcome")}
-//                   title="Make your page"
-//                   className="w-[54px] gap-[2px] px-[8px]"
-//                 >
-//                   <Plus className="w-5 h-5" />
-//                   <UserIcon className="w-4 h-4" />
-//                 </ActionButton>
-//               )}
-
-//               {authLoading ? (
-//                 <></>
-//               ) : isOwner ? (
-//                 <ActionButton
-//                   onClick={handleLogout}
-//                   className="w-[54px]"
-//                   title="Log out"
-//                 >
-//                   <LogOut className="w-5 h-5 " />
-//                 </ActionButton>
-//               ) : (
-//                 <ActionButton
-//                   onClick={() => router.push("/login")}
-//                   className="w-[54px]"
-//                   title="Log in"
-//                 >
-//                   <svg
-//                     xmlns="http://www.w3.org/2000/svg"
-//                     width="22"
-//                     height="22"
-//                     viewBox="0 0 24 24"
-//                     fill="none"
-//                     stroke="currentColor"
-//                     strokeWidth="2"
-//                     strokeLinecap="round"
-//                     strokeLinejoin="round"
-//                   >
-//                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-//                     <polyline points="10 17 15 12 10 7" />
-//                     <line x1="15" x2="3" y1="12" y2="12" />
-//                   </svg>
-//                 </ActionButton>
-//               )}
-
-//               {/* <div className="w-6 h-4 bg-red-400">a</div> */}
-//               {/* <div className="w-6 h-4 bg-red-400">a</div> */}
-//             </div>
-//           </div>
-
-//           <div className="max-w-8xl mx-auto py-4">
-//             <div className="flex">
-//               <div className="w-full mx-4 sm:ml-7 sm:mr-9">
-//                 <DashboardInfoEditor
-//                   uid={profileUser.uid}
-//                   canEdit={isOwner}
-//                   editOn={editOn}
-//                   initialData={profileUser.dashboard?.infoText || "Add info..."}
-//                 />
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-
-/// FALSE FIX
-
-// function LoadingOverlay({
-//   dashHex,
-//   backHex,
-//   profileUser,
-//   skeletonCount,
-//   previewBlurs,
-// }) {
-//   const PageSkeleton = ({ blurDataURL }) => (
-//     <div className="p-2 pb-[3px] rounded-[4px] bg-neutral-200/60 shadow-md h-full mb-[0px]">
-//       <div
-//         className="w-full aspect-[4/3] mb-1 rounded-sm overflow-hidden relative"
-//         style={{
-//           backgroundImage: blurDataURL ? `url("${blurDataURL}")` : undefined,
-//           backgroundSize: "cover",
-//           backgroundPosition: "center",
-//           backgroundColor: !blurDataURL ? "#e5e5e5" : undefined,
-//         }}
-//       >
-//         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-100/10 to-transparent animate-shimmer" />
-//         {!blurDataURL && (
-//           <div className="absolute inset-0 bg-gray-200/50 animate-pulse" />
-//         )}
-//       </div>
-//       <div className="flex pl-1 pr-1 items-center justify-between gap-1 mt-0 h-8 w-full overflow-hidden">
-//         <div className="h-4 w-3/5 bg-gray-300/50 rounded animate-pulse" />
-//         <div className="h-3 w-1/4 bg-gray-300/50 rounded animate-pulse" />
-//       </div>
-//     </div>
-//   );
-
-//   return (
-//     <div
-//       className="fixed inset-0 z-[9999] min-h-[100dvh] overflow-y-auto"
-//       style={{
-//         backgroundColor: hexToRgba(backHex, 1),
-//       }}
-//     >
-//       {/* 1. FIXED: Top header now uses sticky + safe area inset to match the main view */}
-//       <div
-//         className="sticky top-0 left-0 right-0 z-50 w-full"
-//         style={{
-//           backgroundColor: backHex || "#ffffff",
-//           paddingTop: "env(safe-area-inset-top, 0px)",
-//         }}
-//       >
-//         <div className="pt-2">
-//           <DashHeader
-//             profileUser={profileUser}
-//             alpha={1}
-//             editTitleOn={false}
-//             dashHex={dashHex}
-//             isSyncing={false}
-//           />
-//         </div>
-//       </div>
-
-//       <div
-//         className="pt-[12px]"
-//         style={{
-//           backgroundColor: lighten(backHex, -30),
-//         }}
-//       >
-//         {/* 2. REMOVED: The manual spacer div (h-[65px]) is gone to match the main component */}
-//       </div>
-
-//       {/* 3. The second sticky header remains, positioned based on the first header's height */}
-//       <div className="sticky top-[74px] sm:top-[94px] left-0 right-0 z-10 pt-0 px-0">
-//         <DashHeader
-//           title={""}
-//           alpha={1}
-//           profileUser={profileUser}
-//           editColOn={false}
-//           heightShort={true}
-//           dashHex={lighten(dashHex, 30)}
-//           backHex={backHex}
-//         />
-//       </div>
-
-//       {/* 4. Added a small gap to match the main view's height spacing logic */}
-//       <div className="h-[40px]"></div>
-
-//       <div className="p-3 md:p-6">
-//         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
-//           {Array.from({ length: Math.max(skeletonCount, 0) }).map((_, i) => (
-//             <PageSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

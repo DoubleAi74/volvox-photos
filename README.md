@@ -93,3 +93,6 @@ Key Architectural Patterns to Adopt:
 3. Sync-based Visibility - Content hidden until scroll position and data are ready
 4. Grid-based Text Editor - Overlapping layers for smoother edit/view transitions
 5. Comprehensive Status Tracking - Loading, syncing, uploading states all visible to user
+
+git reset --hard HEAD
+git clean -fd
