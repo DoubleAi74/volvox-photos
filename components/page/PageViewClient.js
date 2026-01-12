@@ -107,16 +107,6 @@ export default function PageViewClient({
     themeState?.optimisticPageData?.previewPostBlurs || [];
   const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
 
-  // const handleQueueEmpty = useCallback(async () => {
-  //   if (page?.id) {
-  //     await reindexPosts(page.id);
-  //     await reconcilePostCount(page.id);
-  //     // No longer fetching and replacing posts here - optimistic updates
-  //     // now handle state correctly by updating with real server data
-  //     // after each create/edit operation completes
-  //   }
-  // }, [page?.id]);
-
   const scrollRestorePosRef = useRef(null);
 
   // Add the helper function
@@ -834,7 +824,8 @@ export default function PageViewClient({
 
     // Calculate the modal image width (same logic as PhotoShowModal)
     const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
-    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+    const dpr =
+      typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
     let requiredWidth;
     if (vw <= 768) {
