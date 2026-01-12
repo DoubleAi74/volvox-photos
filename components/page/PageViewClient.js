@@ -10,7 +10,14 @@ import React, {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, LogOut, ArrowLeft, User as UserIcon, Eye } from "lucide-react";
+import {
+  Plus,
+  LogOut,
+  ArrowLeft,
+  User as UserIcon,
+  Eye,
+  Images,
+} from "lucide-react";
 import {
   createPost,
   updatePost,
@@ -23,6 +30,7 @@ import { fetchServerBlur } from "@/lib/processImage";
 import PostCard from "@/components/page/PostCard";
 import CreatePostModal from "@/components/page/CreatePostModal";
 import EditPostModal from "@/components/page/EditPostModal";
+import BulkUploadModal from "@/components/page/BulkUploadModal";
 import PageInfoEditor from "@/components/page/PageInfoEditor";
 import PhotoShowModal from "@/components/page/PhotoShowModal";
 
@@ -123,6 +131,7 @@ export default function PageViewClient({
 
   // UI States
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [editOn, setEditOn] = useState(false);
   const [selectedPostForModal, setSelectedPostForModal] = useState(null);
@@ -339,6 +348,100 @@ export default function PageViewClient({
     });
   };
 
+  const handleBulkUpload = async (postsData) => {
+    if (!(isOwner || isPublic) || !page) return;
+    setShowBulkUploadModal(false);
+
+    const currentList = postsRef.current;
+    let maxOrder =
+      currentList.length > 0
+        ? Math.max(...currentList.map((p) => p.order_index || 0))
+        : 0;
+
+    // Create optimistic posts and queue uploads for each image
+    for (const postData of postsData) {
+      const clientId = crypto.randomUUID();
+      const tempId = `temp-${Date.now()}-${clientId}`;
+      maxOrder += 1;
+      const newOrderIndex = maxOrder;
+
+      const optimisticPost = {
+        id: tempId,
+        title: postData.title,
+        description: postData.description,
+        thumbnail: "",
+        blurDataURL: postData.blurDataURL || "",
+        content_type: postData.content_type,
+        content: postData.content,
+        page_id: page.id,
+        order_index: newOrderIndex,
+        created_date: new Date(),
+        isOptimistic: true,
+        clientId: clientId,
+        isUploadingHeic: postData.needsServerBlur,
+      };
+
+      postsRef.current = [...postsRef.current, optimisticPost];
+      setPosts([...postsRef.current]);
+
+      addToQueue({
+        type: "create",
+        actionFn: async () => {
+          const securePath = `users/${currentUser.uid}/post-thumbnails`;
+          const thumbnailUrl = await uploadFile(
+            postData.pendingFile,
+            securePath
+          );
+          let blurDataURL = postData.blurDataURL;
+
+          if (postData.needsServerBlur) {
+            setPosts((prev) =>
+              prev.map((p) =>
+                p.id === tempId
+                  ? { ...p, thumbnail: thumbnailUrl, isUploadingHeic: false }
+                  : p
+              )
+            );
+            blurDataURL = await fetchServerBlur(thumbnailUrl);
+            setPosts((prev) =>
+              prev.map((p) =>
+                p.id === tempId ? { ...p, blurDataURL: blurDataURL || "" } : p
+              )
+            );
+          }
+
+          const createdPost = await createPost({
+            title: postData.title,
+            description: postData.description,
+            thumbnail: thumbnailUrl,
+            blurDataURL: blurDataURL || "",
+            content_type: postData.content_type,
+            content: postData.content,
+            page_id: page.id,
+            order_index: newOrderIndex,
+            clientId: clientId,
+          });
+
+          // Replace optimistic post with real server data
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === tempId
+                ? {
+                    ...createdPost,
+                    isOptimistic: false,
+                    isUploadingHeic: false,
+                  }
+                : p
+            )
+          );
+        },
+        onRollback: () => {
+          setPosts((prev) => prev.filter((p) => p.id !== tempId));
+        },
+      });
+    }
+  };
+
   const handleEditPost = async (postData) => {
     if (!isOwner || !editingPost) return;
     const targetId = editingPost.id;
@@ -497,14 +600,24 @@ export default function PageViewClient({
         }
         return p;
       });
-      return updatedList.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+      return updatedList.sort(
+        (a, b) => (a.order_index || 0) - (b.order_index || 0)
+      );
     });
 
     addToQueue({
       actionFn: async () => {
         // Update the moved post with its new order_index
-        await updatePost(post.id, { order_index: swapPost.order_index }, previousPosts);
-        await updatePost(swapPost.id, { order_index: post.order_index }, previousPosts);
+        await updatePost(
+          post.id,
+          { order_index: swapPost.order_index },
+          previousPosts
+        );
+        await updatePost(
+          swapPost.id,
+          { order_index: post.order_index },
+          previousPosts
+        );
       },
       onRollback: () => {
         setPosts(previousPosts);
@@ -629,10 +742,15 @@ export default function PageViewClient({
 
             <div className="flex justify-end gap-3">
               {(isOwner || isPublic) && editOn && (
-                <ActionButton onClick={() => setShowCreateModal(true)}>
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">New post</span>
-                </ActionButton>
+                <>
+                  <ActionButton onClick={() => setShowBulkUploadModal(true)}>
+                    <Images className="w-5 h-5" />
+                  </ActionButton>
+                  <ActionButton onClick={() => setShowCreateModal(true)}>
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">New post</span>
+                  </ActionButton>
+                </>
               )}
 
               {authLoading ? (
@@ -784,10 +902,15 @@ export default function PageViewClient({
 
               <div className="flex justify-end gap-3">
                 {(isOwner || isPublic) && editOn && (
-                  <ActionButton onClick={() => setShowCreateModal(true)}>
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden sm:inline">New post</span>
-                  </ActionButton>
+                  <>
+                    <ActionButton onClick={() => setShowBulkUploadModal(true)}>
+                      <Images className="w-5 h-5" />
+                    </ActionButton>
+                    <ActionButton onClick={() => setShowCreateModal(true)}>
+                      <Plus className="w-5 h-5" />
+                      <span className="hidden sm:inline">New post</span>
+                    </ActionButton>
+                  </>
                 )}
 
                 {authLoading ? (
@@ -884,6 +1007,10 @@ export default function PageViewClient({
               <CreatePostModal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
+                onToMultiple={() => {
+                  setShowBulkUploadModal(true);
+                  setShowCreateModal(false);
+                }}
                 onSubmit={handleCreatePost}
               />
             )}
@@ -894,6 +1021,18 @@ export default function PageViewClient({
                 post={editingPost}
                 onClose={() => setEditingPost(null)}
                 onSubmit={handleEditPost}
+              />
+            )}
+
+            {(isOwner || isPublic) && (
+              <BulkUploadModal
+                isOpen={showBulkUploadModal}
+                onClose={() => setShowBulkUploadModal(false)}
+                onBackToSingle={() => {
+                  setShowBulkUploadModal(false);
+                  setShowCreateModal(true);
+                }}
+                onSubmit={handleBulkUpload}
               />
             )}
 
@@ -936,10 +1075,17 @@ export default function PageViewClient({
               {isOwner && (
                 <>
                   {editOn && (
-                    <ActionButton onClick={() => setShowCreateModal(true)}>
-                      <Plus className="w-5 h-5" />
-                      <span className="hidden sm:inline">New post</span>
-                    </ActionButton>
+                    <>
+                      <ActionButton
+                        onClick={() => setShowBulkUploadModal(true)}
+                      >
+                        <Images className="w-5 h-5" />
+                      </ActionButton>
+                      <ActionButton onClick={() => setShowCreateModal(true)}>
+                        <Plus className="w-5 h-5" />
+                        <span className="hidden sm:inline">New post</span>
+                      </ActionButton>
+                    </>
                   )}
 
                   <ActionButton
