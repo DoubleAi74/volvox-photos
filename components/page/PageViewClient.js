@@ -107,15 +107,41 @@ export default function PageViewClient({
     themeState?.optimisticPageData?.previewPostBlurs || [];
   const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
 
+  // const handleQueueEmpty = useCallback(async () => {
+  //   if (page?.id) {
+  //     await reindexPosts(page.id);
+  //     await reconcilePostCount(page.id);
+  //     // No longer fetching and replacing posts here - optimistic updates
+  //     // now handle state correctly by updating with real server data
+  //     // after each create/edit operation completes
+  //   }
+  // }, [page?.id]);
+
+  const scrollRestorePosRef = useRef(null);
+
+  // Add the helper function
+  const refreshWithScrollRestore = useCallback(() => {
+    scrollRestorePosRef.current = window.scrollY;
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    router.refresh();
+  }, [router]);
+
+  const [isPending, startTransition] = React.useTransition(); // Add this at the top of component
+
   const handleQueueEmpty = useCallback(async () => {
     if (page?.id) {
+      console.log("Queue empty, syncing server state...");
       await reindexPosts(page.id);
       await reconcilePostCount(page.id);
-      // No longer fetching and replacing posts here - optimistic updates
-      // now handle state correctly by updating with real server data
-      // after each create/edit operation completes
+
+      // Trigger the refresh to clear the Next.js cache
+      startTransition(() => {
+        refreshWithScrollRestore();
+      });
     }
-  }, [page?.id]);
+  }, [page?.id, refreshWithScrollRestore]);
 
   const { addToQueue, isSyncing } = useQueue(handleQueueEmpty);
 
@@ -156,9 +182,54 @@ export default function PageViewClient({
 
   const hasScrolledRef = useRef(false);
 
+  // useLayoutEffect(() => {
+  //   if (typeof window === "undefined") return;
+  //   if (hasScrolledRef.current) return;
+
+  //   if ("scrollRestoration" in window.history) {
+  //     window.history.scrollRestoration = "manual";
+  //   }
+
+  //   window.scrollTo(0, 0);
+
+  //   const scrollToTarget = () => {
+  //     if (hasScrolledRef.current) return;
+
+  //     if (topInfoRef.current) {
+  //       topInfoRef.current.scrollIntoView({ behavior: "instant" });
+  //     }
+  //     hasScrolledRef.current = true;
+  //     setIsSynced(true);
+  //   };
+
+  //   const waitForFontsAndPaint = async () => {
+  //     if (document.fonts?.ready) {
+  //       await document.fonts.ready;
+  //     }
+
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(scrollToTarget);
+  //     });
+  //   };
+
+  //   waitForFontsAndPaint();
+  // }, []);
+
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    if (hasScrolledRef.current) return;
+
+    // Determine if this is a fresh landing
+    const navigationEntry = performance.getEntriesByType("navigation")[0];
+    const isInitialLoad =
+      navigationEntry?.type === "navigate" ||
+      navigationEntry?.type === "reload";
+
+    // GUARD: If we've already scrolled or this is just a data refresh, EXIT
+    if (!isInitialLoad || hasScrolledRef.current) {
+      hasScrolledRef.current = true;
+      setIsSynced(true);
+      return;
+    }
 
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
@@ -168,7 +239,6 @@ export default function PageViewClient({
 
     const scrollToTarget = () => {
       if (hasScrolledRef.current) return;
-
       if (topInfoRef.current) {
         topInfoRef.current.scrollIntoView({ behavior: "instant" });
       }
@@ -177,10 +247,7 @@ export default function PageViewClient({
     };
 
     const waitForFontsAndPaint = async () => {
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-
+      if (document.fonts?.ready) await document.fonts.ready;
       requestAnimationFrame(() => {
         requestAnimationFrame(scrollToTarget);
       });
@@ -203,9 +270,57 @@ export default function PageViewClient({
     }
   };
 
-  useEffect(() => {
-    if (!initialPosts || initialPosts.length === 0) return;
+  // useEffect(() => {
+  //   if (!initialPosts || initialPosts.length === 0) return;
 
+  //   const serverIds = new Set(initialPosts.map((p) => p.id));
+  //   deletedIdsRef.current.forEach((id) => {
+  //     if (!serverIds.has(id)) {
+  //       deletedIdsRef.current.delete(id);
+  //     }
+  //   });
+
+  //   setPosts((currentLocalPosts) => {
+  //     if (currentLocalPosts.length > 0 && currentLocalPosts[0]?.isSkeleton) {
+  //       return initialPosts.filter((p) => !deletedIdsRef.current.has(p.id));
+  //     }
+
+  //     const validServerPosts = initialPosts.filter(
+  //       (p) => !deletedIdsRef.current.has(p.id)
+  //     );
+  //     const optimisticPosts = currentLocalPosts.filter((p) => p.isOptimistic);
+  //     const serverPostsByClientId = new Map();
+  //     validServerPosts.forEach((p) => {
+  //       if (p.clientId) serverPostsByClientId.set(p.clientId, p);
+  //     });
+
+  //     const merged = validServerPosts.map((serverPost) => {
+  //       const matchingOptimistic = optimisticPosts.find(
+  //         (opt) => opt.clientId && opt.clientId === serverPost.clientId
+  //       );
+  //       return matchingOptimistic ? serverPost : serverPost;
+  //     });
+
+  //     optimisticPosts.forEach((optPost) => {
+  //       const hasServerVersion =
+  //         optPost.clientId && serverPostsByClientId.has(optPost.clientId);
+  //       const existsById = merged.some((p) => p.id === optPost.id);
+  //       if (!hasServerVersion && !existsById) {
+  //         merged.push(optPost);
+  //       }
+  //     });
+
+  //     return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+  //   });
+  // }, [initialPosts]);
+
+  useEffect(() => {
+    // 1. Guard against empty initial load
+    if (!initialPosts) return;
+
+    // 2. Sync the Deleted IDs Ref
+    // If a post is no longer in initialPosts, it means the server has
+    // processed the deletion, so we can stop tracking it as "deleted".
     const serverIds = new Set(initialPosts.map((p) => p.id));
     deletedIdsRef.current.forEach((id) => {
       if (!serverIds.has(id)) {
@@ -213,39 +328,65 @@ export default function PageViewClient({
       }
     });
 
+    // 3. Merge Server Data with Optimistic Local State
     setPosts((currentLocalPosts) => {
+      // If we are currently showing skeletons, replace them with real server data
       if (currentLocalPosts.length > 0 && currentLocalPosts[0]?.isSkeleton) {
         return initialPosts.filter((p) => !deletedIdsRef.current.has(p.id));
       }
 
+      // Filter server data against our local deletion tracking
       const validServerPosts = initialPosts.filter(
         (p) => !deletedIdsRef.current.has(p.id)
       );
+
+      // Keep any items that are currently in the middle of a background sync (optimistic)
       const optimisticPosts = currentLocalPosts.filter((p) => p.isOptimistic);
+
+      // Create a map for fast lookup
       const serverPostsByClientId = new Map();
       validServerPosts.forEach((p) => {
         if (p.clientId) serverPostsByClientId.set(p.clientId, p);
       });
 
+      // Start with server data as the source of truth
       const merged = validServerPosts.map((serverPost) => {
-        const matchingOptimistic = optimisticPosts.find(
-          (opt) => opt.clientId && opt.clientId === serverPost.clientId
-        );
-        return matchingOptimistic ? serverPost : serverPost;
+        return serverPost;
       });
 
+      // Add optimistic posts that haven't appeared on the server yet
       optimisticPosts.forEach((optPost) => {
         const hasServerVersion =
           optPost.clientId && serverPostsByClientId.has(optPost.clientId);
         const existsById = merged.some((p) => p.id === optPost.id);
+
         if (!hasServerVersion && !existsById) {
           merged.push(optPost);
         }
       });
 
+      // Final sort based on the order index
       return merged.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
     });
-  }, [initialPosts]);
+
+    // 4. RESTORE SCROLL POSITION
+    // This triggers specifically after refreshWithScrollRestore calls router.refresh()
+    if (scrollRestorePosRef.current !== null) {
+      const savedY = scrollRestorePosRef.current;
+      scrollRestorePosRef.current = null; // Clear it so it doesn't loop
+
+      // Double requestAnimationFrame ensures the browser has rendered the
+      // new set of PostCards before we try to set the scroll position.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: savedY,
+            behavior: "instant",
+          });
+        });
+      });
+    }
+  }, [initialPosts]); // This dependency is key—it fires every time the server data refreshes
 
   const handleLogout = async () => {
     try {
