@@ -138,7 +138,8 @@ export default function PhotoShowModal({
 
     // Calculate viewport-appropriate width
     const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
-    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+    const dpr =
+      typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
     let requiredWidth;
     if (vw <= 768) {
@@ -298,7 +299,11 @@ export default function PhotoShowModal({
                   onLoad={() => setIsLoaded(true)}
                   className={`
                     object-contain
-                    ${wasCached ? "" : "transition-opacity duration-300 ease-out"}
+                    ${
+                      wasCached
+                        ? ""
+                        : "transition-opacity duration-300 ease-out"
+                    }
                     ${isLoaded ? "opacity-100" : "opacity-0"}
                   `}
                   priority
