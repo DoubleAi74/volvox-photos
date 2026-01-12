@@ -10,14 +10,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import {
-  Plus,
-  LogOut,
-  ArrowLeft,
-  User as UserIcon,
-  Eye,
-  Images,
-} from "lucide-react";
+import { Plus, LogOut, ArrowLeft, User as UserIcon, Eye } from "lucide-react";
 import {
   createPost,
   updatePost,
@@ -743,9 +736,6 @@ export default function PageViewClient({
             <div className="flex justify-end gap-3">
               {(isOwner || isPublic) && editOn && (
                 <>
-                  <ActionButton onClick={() => setShowBulkUploadModal(true)}>
-                    <Images className="w-5 h-5" />
-                  </ActionButton>
                   <ActionButton onClick={() => setShowCreateModal(true)}>
                     <Plus className="w-5 h-5" />
                     <span className="hidden sm:inline">New post</span>
@@ -903,9 +893,6 @@ export default function PageViewClient({
               <div className="flex justify-end gap-3">
                 {(isOwner || isPublic) && editOn && (
                   <>
-                    <ActionButton onClick={() => setShowBulkUploadModal(true)}>
-                      <Images className="w-5 h-5" />
-                    </ActionButton>
                     <ActionButton onClick={() => setShowCreateModal(true)}>
                       <Plus className="w-5 h-5" />
                       <span className="hidden sm:inline">New post</span>
@@ -1076,11 +1063,6 @@ export default function PageViewClient({
                 <>
                   {editOn && (
                     <>
-                      <ActionButton
-                        onClick={() => setShowBulkUploadModal(true)}
-                      >
-                        <Images className="w-5 h-5" />
-                      </ActionButton>
                       <ActionButton onClick={() => setShowCreateModal(true)}>
                         <Plus className="w-5 h-5" />
                         <span className="hidden sm:inline">New post</span>
