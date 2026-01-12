@@ -822,12 +822,6 @@ export default function PageViewClient({
     setSelectedPostForModal(posts[currentIndex - 1]);
   };
 
-  const nextPost =
-    currentIndex >= 0 && currentIndex < posts.length - 1
-      ? posts[currentIndex + 1]
-      : null;
-  const previousPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
-
   // Track which images have been preloaded to avoid duplicate requests
   const preloadedImagesRef = useRef(new Set());
 
@@ -1211,8 +1205,8 @@ export default function PageViewClient({
               onPrevious={handlePreviousPost}
               hasNext={currentIndex < posts.length - 1}
               hasPrevious={currentIndex > 0}
-              nextPost={nextPost}
-              previousPost={previousPost}
+              posts={posts}
+              currentIndex={currentIndex}
             />
 
             {/* SIMPLIFICATION 4: Consolidated Modals */}
