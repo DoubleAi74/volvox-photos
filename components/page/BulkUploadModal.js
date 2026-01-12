@@ -76,30 +76,45 @@ export default function BulkUploadModal({
     setIsProcessing(true);
     setProcessingCount(files.length);
 
-    const processedFiles = [];
+    // Process images in parallel batches for speed
+    const BATCH_SIZE = 4;
+    const allProcessedFiles = [];
 
-    for (const rawFile of files) {
-      try {
-        const {
-          file: processedFile,
-          blurDataURL,
-          needsServerBlur,
-        } = await processImage(rawFile);
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE);
 
-        processedFiles.push({
-          id: crypto.randomUUID(),
-          file: processedFile,
-          blurDataURL: blurDataURL || "",
-          needsServerBlur,
-          fileName: rawFile.name,
-        });
-      } catch (error) {
-        console.error("Failed to process file:", rawFile.name, error);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (rawFile) => {
+          const {
+            file: processedFile,
+            blurDataURL,
+            needsServerBlur,
+          } = await processImage(rawFile);
+
+          return {
+            id: crypto.randomUUID(),
+            file: processedFile,
+            blurDataURL: blurDataURL || "",
+            needsServerBlur,
+            fileName: rawFile.name,
+          };
+        })
+      );
+
+      // Collect successful results
+      for (const result of batchResults) {
+        if (result.status === "fulfilled") {
+          allProcessedFiles.push(result.value);
+        } else {
+          console.error("Failed to process file:", result.reason);
+        }
       }
-      setProcessingCount((prev) => prev - 1);
+
+      // Update count after each batch
+      setProcessingCount((prev) => Math.max(0, prev - batch.length));
     }
 
-    setSelectedFiles((prev) => [...prev, ...processedFiles]);
+    setSelectedFiles((prev) => [...prev, ...allProcessedFiles]);
     setIsProcessing(false);
     setProcessingCount(0);
 

@@ -16,6 +16,8 @@ import {
   updatePost,
   deletePost,
   uploadFile,
+  uploadFileWithSignedUrl,
+  getBatchUploadUrls,
   reindexPosts,
   reconcilePostCount,
 } from "@/lib/data";
@@ -351,40 +353,84 @@ export default function PageViewClient({
         ? Math.max(...currentList.map((p) => p.order_index || 0))
         : 0;
 
-    // Create optimistic posts and queue uploads for each image
-    for (const postData of postsData) {
+    // Prepare posts with clientIds and order indices
+    const preparedPosts = postsData.map((postData) => {
       const clientId = crypto.randomUUID();
       const tempId = `temp-${Date.now()}-${clientId}`;
       maxOrder += 1;
-      const newOrderIndex = maxOrder;
-
-      const optimisticPost = {
-        id: tempId,
-        title: postData.title,
-        description: postData.description,
-        thumbnail: "",
-        blurDataURL: postData.blurDataURL || "",
-        content_type: postData.content_type,
-        content: postData.content,
-        page_id: page.id,
-        order_index: newOrderIndex,
-        created_date: new Date(),
-        isOptimistic: true,
-        clientId: clientId,
-        isUploadingHeic: postData.needsServerBlur,
+      return {
+        ...postData,
+        clientId,
+        tempId,
+        orderIndex: maxOrder,
+        file: postData.pendingFile,
       };
+    });
 
-      postsRef.current = [...postsRef.current, optimisticPost];
-      setPosts([...postsRef.current]);
+    // Create optimistic posts immediately for all items
+    const optimisticPosts = preparedPosts.map((p) => ({
+      id: p.tempId,
+      title: p.title,
+      description: p.description,
+      thumbnail: "",
+      blurDataURL: p.blurDataURL || "",
+      content_type: p.content_type,
+      content: p.content,
+      page_id: page.id,
+      order_index: p.orderIndex,
+      created_date: new Date(),
+      isOptimistic: true,
+      clientId: p.clientId,
+      isUploadingHeic: p.needsServerBlur,
+    }));
+
+    postsRef.current = [...postsRef.current, ...optimisticPosts];
+    setPosts([...postsRef.current]);
+
+    // Batch request presigned URLs in chunks to avoid overwhelming the API
+    const securePath = `users/${currentUser.uid}/post-thumbnails`;
+    let batchUrls = [];
+    const URL_BATCH_SIZE = 20;
+    const urlMap = new Map();
+
+    try {
+      for (let i = 0; i < preparedPosts.length; i += URL_BATCH_SIZE) {
+        const batch = preparedPosts.slice(i, i + URL_BATCH_SIZE);
+        const batchUrls = await getBatchUploadUrls(batch, securePath);
+        for (const urlInfo of batchUrls) {
+          urlMap.set(urlInfo.clientId, urlInfo);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to get batch upload URLs:", error);
+      // Rollback all optimistic posts on failure
+      setPosts((prev) =>
+        prev.filter((p) => !preparedPosts.some((pp) => pp.tempId === p.id))
+      );
+      return;
+    }
+
+    // // Create a map for quick lookup: clientId -> { signedUrl, publicUrl }
+    // const urlMap = new Map(batchUrls.map((u) => [u.clientId, u]));
+
+    // Queue uploads for each post (now each task already has its presigned URL)
+    for (const postData of preparedPosts) {
+      const { tempId, clientId, orderIndex } = postData;
+      const urlInfo = urlMap.get(clientId);
+
+      if (!urlInfo) {
+        console.error("No URL found for clientId:", clientId);
+        setPosts((prev) => prev.filter((p) => p.id !== tempId));
+        continue;
+      }
 
       addToQueue({
         type: "create",
         actionFn: async () => {
-          const securePath = `users/${currentUser.uid}/post-thumbnails`;
-          const thumbnailUrl = await uploadFile(
-            postData.pendingFile,
-            securePath
-          );
+          // Upload directly using pre-obtained signed URL (no extra API call)
+          await uploadFileWithSignedUrl(postData.file, urlInfo.signedUrl);
+          const thumbnailUrl = urlInfo.publicUrl;
+
           let blurDataURL = postData.blurDataURL;
 
           if (postData.needsServerBlur) {
@@ -411,7 +457,7 @@ export default function PageViewClient({
             content_type: postData.content_type,
             content: postData.content,
             page_id: page.id,
-            order_index: newOrderIndex,
+            order_index: orderIndex,
             clientId: clientId,
           });
 
