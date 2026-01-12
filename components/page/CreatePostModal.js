@@ -247,7 +247,7 @@ export default function CreatePostModal({
 
                 {/* Button Group Wrapper */}
                 <div className="flex-1 relative">
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     {/* Select Image Button (2/3 width) */}
                     <div className="flex-[3]">
                       <input
@@ -260,7 +260,7 @@ export default function CreatePostModal({
                       />
                       <label
                         htmlFor="post-thumbnail-upload"
-                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-[3px] bg-white/[0.06] border border-white/10 text-sm text-white/60 cursor-pointer hover:bg-white/10 hover:text-white/80 hover:border-white/15 active:bg-white/15 transition-all duration-150 ${
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-[2px] bg-white/[0.06] border border-white/10 text-sm text-white/60 cursor-pointer hover:bg-white/10 hover:text-white/80 hover:border-white/15 active:bg-white/15 transition-all duration-150 ${
                           isProcessing ? "opacity-50 cursor-not-allowed" : ""
                         }`}
                       >
@@ -279,7 +279,7 @@ export default function CreatePostModal({
                     <button
                       type="button"
                       onClick={onToMultiple}
-                      className="flex-[1] flex items-center justify-center gap-2 px-4 py-2.5 rounded-[3px] bg-white/[0.06] border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 hover:border-white/15 active:bg-white/15 transition-all duration-150"
+                      className="flex-[1] flex items-center justify-center gap-2 px-4 mr-[1px] py-2.5 rounded-[2px] bg-white/[0.06] border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 hover:border-white/15 active:bg-white/15 transition-all duration-150"
                     >
                       <span className="hidden sm:block">Multiple</span>
                       <Images className="w-5 h-5" />
