@@ -36,6 +36,7 @@ export default function PostCard({
   index = 0,
   isFirst = false,
   isLast = false,
+  onHoverPreload,
 }) {
   const ContentIcon = contentTypeIcons[post.content_type] || FileText;
   const isOptimistic = post.isOptimistic || false;
@@ -92,11 +93,19 @@ export default function PostCard({
     );
   }
 
+  // Handle hover preload
+  const handleMouseEnter = () => {
+    if (onHoverPreload && post.thumbnail) {
+      onHoverPreload(post);
+    }
+  };
+
   return (
     <div
       className={`group relative transition-opacity duration-200 ${
         isOptimistic ? "opacity-75" : "opacity-100"
       }`}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setDeletePrime(false)}
     >
       <div className="p-1 rounded-[2px] bg-neutral-900/30 shadow-md hover:bg-neutral-900/50 transition-all duration-100 cursor-pointer h-full flex flex-col">

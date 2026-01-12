@@ -4,6 +4,17 @@ import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
+// Helper to generate Cloudflare CDN URL
+const getCloudflareUrl = (src, width, quality = 75) => {
+  try {
+    const url = new URL(src);
+    const path = url.pathname;
+    return `https://files.volvox.pics/cdn-cgi/image/width=${width},quality=${quality},format=auto${path}`;
+  } catch (e) {
+    return src;
+  }
+};
+
 export default function PhotoShowModal({
   post,
   onOff,
@@ -19,6 +30,7 @@ export default function PhotoShowModal({
   const imageRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [wasCached, setWasCached] = useState(false);
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
 
   /* ---------------------------------------------
    * Sync <dialog> open/close with parent state
@@ -60,6 +72,7 @@ export default function PhotoShowModal({
 
     setWasCached(cached);
     setIsLoaded(cached);
+    setThumbnailLoaded(false);
   }, [post?.id]);
 
   useEffect(() => {
@@ -263,7 +276,7 @@ export default function PhotoShowModal({
                 onClick={handleImageClick}
                 className="relative bg-black select-none flex justify-center items-center overflow-hidden h-[65vh] w-full"
               >
-                {/* BLUR PLACEHOLDER */}
+                {/* LAYER 1: BLUR PLACEHOLDER (always visible as base) */}
                 {post.blurDataURL && (
                   <Image
                     src={post.blurDataURL}
@@ -275,18 +288,35 @@ export default function PhotoShowModal({
                   />
                 )}
 
-                {/* FULL IMAGE */}
+                {/* LAYER 2: GRID THUMBNAIL (small, already cached from grid view) */}
+                {/* Stays visible until full image is loaded - no fade out to prevent jitter */}
+                {post.thumbnail && (
+                  <img
+                    src={getCloudflareUrl(post.thumbnail, 384)}
+                    alt=""
+                    aria-hidden
+                    onLoad={() => setThumbnailLoaded(true)}
+                    className={`
+                      absolute inset-0 w-full h-full object-contain pointer-events-none
+                      ${thumbnailLoaded ? "opacity-100" : "opacity-0"}
+                    `}
+                  />
+                )}
+
+                {/* LAYER 3: FULL IMAGE (modal size) */}
+                {/* Fades in over the thumbnail - no transition on thumbnail prevents jitter */}
                 <Image
+                  ref={imageRef}
                   src={post.thumbnail}
                   alt={post.title}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   onLoad={() => setIsLoaded(true)}
                   className={`
-    object-contain
-    ${wasCached ? "" : "transition-opacity duration-500 ease-out"}
-    ${isLoaded ? "opacity-100" : "opacity-0"}
-  `}
+                    object-contain
+                    ${wasCached ? "" : "transition-opacity duration-300 ease-out"}
+                    ${isLoaded ? "opacity-100" : "opacity-0"}
+                  `}
                   priority
                 />
 

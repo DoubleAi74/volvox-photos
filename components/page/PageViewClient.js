@@ -828,6 +828,44 @@ export default function PageViewClient({
       : null;
   const previousPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
 
+  // Track which images have been preloaded to avoid duplicate requests
+  const preloadedImagesRef = useRef(new Set());
+
+  // Preload modal-size image on hover
+  const handleHoverPreload = useCallback((post) => {
+    if (!post?.thumbnail || preloadedImagesRef.current.has(post.id)) return;
+
+    // Mark as preloaded immediately to prevent duplicate requests
+    preloadedImagesRef.current.add(post.id);
+
+    // Calculate the modal image width (same logic as PhotoShowModal)
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
+    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+
+    let requiredWidth;
+    if (vw <= 768) {
+      requiredWidth = vw * dpr;
+    } else {
+      requiredWidth = vw * 0.5 * dpr;
+    }
+
+    const supportedWidths = [640, 750, 828, 1080, 1200, 1920, 2048, 3840];
+    let width = supportedWidths.find((w) => w >= requiredWidth) || 3840;
+
+    // Generate Cloudflare URL for modal size
+    try {
+      const url = new URL(post.thumbnail);
+      const path = url.pathname;
+      const modalSizeUrl = `https://files.volvox.pics/cdn-cgi/image/width=${width},quality=75,format=auto${path}`;
+
+      // Preload via hidden image element
+      const img = new window.Image();
+      img.src = modalSizeUrl;
+    } catch (e) {
+      // Ignore URL parsing errors
+    }
+  }, []);
+
   return (
     <>
       <div
@@ -1039,6 +1077,7 @@ export default function PageViewClient({
                       onDelete={() => handleDeletePost(post)}
                       onMoveLeft={() => handleMovePost(post.id, "left")}
                       onMoveRight={() => handleMovePost(post.id, "right")}
+                      onHoverPreload={handleHoverPreload}
                       index={index}
                       isFirst={index === 0}
                       isLast={index === posts.length - 1}
