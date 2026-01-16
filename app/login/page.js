@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { lowercaseDashed, findAvailableUsernameTag } from "@/lib/data";
 import NextLink from "next/link";
+import ActionButton from "@/components/ActionButton";
 
 // ----------------------------------------------------------------------
 // 1. PASTE YOUR BASE64 STRINGS HERE
@@ -101,13 +102,13 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen overflow-hidden font-sans text-white bg-black">
       {/* ----------------------------------
-         BACKGROUND SYSTEM
-      ---------------------------------- */}
+       BACKGROUND SYSTEM
+    ---------------------------------- */}
       <div className="absolute inset-0 z-0">
         {/* 
-           LAYER 1: INSTANT PLACEHOLDERS (Base64)
-           Tailwind switches these based on screen width (md:hidden vs hidden md:block)
-        */}
+         LAYER 1: INSTANT PLACEHOLDERS (Base64)
+         Tailwind switches these based on screen width (md:hidden vs hidden md:block)
+      */}
 
         {/* Mobile Placeholder (< 768px) */}
         <div
@@ -124,9 +125,9 @@ export default function LoginPage() {
         />
 
         {/* 
-           LAYER 2: HIGH RES IMAGE (Art Direction)
-           Switches between the 800px vertical crop and 1920px landscape
-        */}
+         LAYER 2: HIGH RES IMAGE (Art Direction)
+         Switches between the 800px vertical crop and 1920px landscape
+      */}
         <picture>
           <source srcSet="/background-800.webp" media="(max-width: 768px)" />
           <img
@@ -135,10 +136,10 @@ export default function LoginPage() {
             fetchPriority="high"
             decoding="async"
             className="
-              relative h-full w-full object-cover
-              opacity-0
-              motion-safe:animate-[fadeInBlur_1.5s_cubic-bezier(0.16,1,0.3,1)_forwards]
-            "
+            relative h-full w-full object-cover
+            opacity-0
+            motion-safe:animate-[fadeInBlur_1.5s_cubic-bezier(0.16,1,0.3,1)_forwards]
+          "
           />
         </picture>
 
@@ -147,22 +148,22 @@ export default function LoginPage() {
       </div>
 
       {/* ----------------------------------
-         CONTENT
-      ---------------------------------- */}
+       CONTENT
+    ---------------------------------- */}
       <div
         className="
-          relative z-10 flex min-h-[100svh] flex-col items-center
-          justify-start pt-[14svh]
-          md:min-h-screen md:justify-center md:pt-0
-          px-4
-        "
+        relative z-10 flex min-h-[100svh] flex-col items-center
+        justify-start pt-[14svh]
+        md:min-h-screen md:justify-center md:pt-0
+        px-4
+      "
       >
         <div className="w-full max-w-lg">
           <div className="relative overflow-hidden rounded-md bg-black/60 px-14 py-10 shadow-2xl backdrop-blur-[1px] border border-white/5">
             {/* Header */}
             <div className="text-center">
               <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-                Volvox Pictures
+                Volvox Works
               </h1>
               <p className="mt-5 mb-6 text-zinc-300">
                 {isSigningUp
@@ -183,12 +184,21 @@ export default function LoginPage() {
                     onChange={(e) => setUsernameBase(e.target.value)}
                     placeholder="Full Name (e.g. Adam Aldridge)"
                     className={`
-    block w-full rounded-sm px-4 py-3
-    bg-zinc-900/50 text-white placeholder:text-zinc-600
-    ring-1 ring-white/10 outline-none
-    focus:ring-white/40
-    ${suggestedTag ? "ring-green-500/30 focus:ring-green-500/50" : ""}
-  `}
+                    block w-full rounded-sm px-4 py-3
+                    bg-zinc-900/50 text-white placeholder:text-zinc-600
+                    ring-1 ring-white/10 outline-none
+                    focus:ring-white/40
+                    ${
+                      suggestedTag
+                        ? "ring-green-500/30 focus:ring-green-500/50"
+                        : ""
+                    }
+                    
+                    /* AUTOFILL FIXES */
+                    [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(24,24,27)]
+                    [&:-webkit-autofill]:[-webkit-text-fill-color:white]
+                    [&:-webkit-autofill]:caret-white
+                  `}
                     required
                   />
 
@@ -205,7 +215,7 @@ export default function LoginPage() {
                           </span>
                         ) : suggestedTag ? (
                           <span className="text-zinc-500">
-                            volvox.pics/
+                            volvox.works/
                             <span className="ml-1 font-semibold text-green-400">
                               {suggestedTag}
                             </span>
@@ -218,7 +228,6 @@ export default function LoginPage() {
               )}
 
               {/* EMAIL */}
-
               <input
                 type="email"
                 name="email"
@@ -227,16 +236,20 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
                 className="
-    block w-full rounded-sm px-4 py-3
-    bg-zinc-900/50 text-white placeholder:text-zinc-600
-    ring-1 ring-white/10 outline-none
-    focus:ring-white/40
-  "
+                block w-full rounded-sm px-4 py-3
+                bg-zinc-900/50 text-white placeholder:text-zinc-600
+                ring-1 ring-white/10 outline-none
+                focus:ring-white/40
+
+                /* AUTOFILL FIXES */
+                [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(24,24,27)]
+                [&:-webkit-autofill]:[-webkit-text-fill-color:white]
+                [&:-webkit-autofill]:caret-white
+              "
                 required
               />
 
               {/* PASSWORD */}
-
               <input
                 type="password"
                 name="password"
@@ -245,11 +258,16 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="
-    block w-full rounded-sm px-4 py-3
-    bg-zinc-900/50 text-white placeholder:text-zinc-600
-    ring-1 ring-white/10 outline-none
-    focus:ring-white/40
-  "
+                block w-full rounded-sm px-4 py-3
+                bg-zinc-900/50 text-white placeholder:text-zinc-600
+                ring-1 ring-white/10 outline-none
+                focus:ring-white/40
+
+                /* AUTOFILL FIXES */
+                [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(24,24,27)]
+                [&:-webkit-autofill]:[-webkit-text-fill-color:white]
+                [&:-webkit-autofill]:caret-white
+              "
                 required
               />
 
@@ -265,14 +283,14 @@ export default function LoginPage() {
                 type="submit"
                 disabled={processing || (isSigningUp && !suggestedTag)}
                 className={`
-                  w-full rounded-sm py-3 text-sm font-semibold
-                  transition-all
-                  ${
-                    processing || (isSigningUp && !suggestedTag)
-                      ? "cursor-not-allowed bg-zinc-300/60 text-neutral-700"
-                      : "bg-zinc-300 text-neutral-700 hover:bg-zinc-400"
-                  }
-                `}
+                w-full rounded-sm py-3 text-sm font-semibold
+                transition-all
+                ${
+                  processing || (isSigningUp && !suggestedTag)
+                    ? "cursor-not-allowed bg-zinc-300/60 text-neutral-700"
+                    : "bg-zinc-300 text-neutral-700 hover:bg-zinc-400"
+                }
+              `}
               >
                 {processing
                   ? isSigningUp
@@ -293,6 +311,11 @@ export default function LoginPage() {
                 Don&apos;t have an account? Join the waitlist.
               </NextLink>
             </div>
+            {false && (
+              <ActionButton onClick={() => setIsSigningUp(!isSigningUp)}>
+                Toggle sign up
+              </ActionButton>
+            )}
           </div>
         </div>
       </div>

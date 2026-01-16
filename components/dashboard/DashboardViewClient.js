@@ -68,38 +68,6 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
   const optimisticBlurs = themeState?.optimisticDashboardData?.pageBlurs || [];
   const overlayBlurs = serverBlurs.length > 0 ? serverBlurs : optimisticBlurs;
 
-  // Helper to refresh without losing scroll position
-  // const refreshWithScrollRestore = useCallback(() => {
-  //   const scrollY = window.scrollY;
-
-  //   // Prevent browser from auto-restoring scroll
-  //   if ("scrollRestoration" in window.history) {
-  //     window.history.scrollRestoration = "manual";
-  //   }
-
-  //   // Lock scroll position by intercepting any scroll attempts
-  //   let isLocked = true;
-  //   const lockScroll = () => {
-  //     if (isLocked) {
-  //       window.scrollTo(0, scrollY);
-  //     }
-  //   };
-
-  //   // Add scroll listener to immediately counteract any scroll changes
-  //   window.addEventListener("scroll", lockScroll, { passive: false });
-
-  //   router.refresh();
-
-  //   // Keep the lock active for a reasonable time to cover React's async re-render
-  //   // Then clean up
-  //   setTimeout(() => {
-  //     isLocked = false;
-  //     window.removeEventListener("scroll", lockScroll);
-  //     // Final scroll restoration to ensure we're at the right position
-  //     window.scrollTo(0, scrollY);
-  //   }, 1000);
-  // }, [router]);
-
   const refreshWithScrollRestore = useCallback(() => {
     // 1. Capture current position
     scrollRestorePosRef.current = window.scrollY;
@@ -796,7 +764,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
                   </h3>
                 </div>
               ) : (
-                [1, 2, 3, 4, 5, 6, 7, 8].map((i) => <PageSkeleton key={i} />)
+                <div></div>
               )}
             </div>
           ) : (
@@ -847,7 +815,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           >
             {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
-            {true && (
+            {false && (
               <ActionButton
                 onClick={() => setDebugOverlay(!debugOverlay)}
                 active={debugOverlay}

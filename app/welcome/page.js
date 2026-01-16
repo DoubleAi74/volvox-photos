@@ -59,12 +59,12 @@ export default function WaitlistPage() {
   return (
     <div className="relative min-h-screen overflow-hidden font-sans text-white bg-black">
       {/* ----------------------------------
-         BACKGROUND SYSTEM
-      ---------------------------------- */}
+       BACKGROUND SYSTEM
+    ---------------------------------- */}
       <div className="absolute inset-0 z-0">
         {/* 
-           LAYER 1: INSTANT PLACEHOLDERS (Base64)
-        */}
+         LAYER 1: INSTANT PLACEHOLDERS (Base64)
+      */}
 
         {/* Mobile Placeholder (< 768px) */}
         <div
@@ -81,8 +81,8 @@ export default function WaitlistPage() {
         />
 
         {/* 
-           LAYER 2: HIGH RES IMAGE
-        */}
+         LAYER 2: HIGH RES IMAGE
+      */}
         <picture>
           <source srcSet="/background-800.webp" media="(max-width: 768px)" />
 
@@ -100,15 +100,15 @@ export default function WaitlistPage() {
       </div>
 
       {/* ----------------------------------
-         CONTENT
-      ---------------------------------- */}
+       CONTENT
+    ---------------------------------- */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-start pt-[19svh] md:justify-center md:pt-0 px-4">
         <div className="w-full max-w-lg">
           <div className="relative overflow-hidden rounded-md bg-black/60 px-8 py-10 shadow-2xl backdrop-blur-[1px] border border-white/5 sm:px-14">
             <div className="text-center">
               <h1 className="flex flex-wrap items-center justify-center gap-1">
                 <span className="text-3xl md:text-4xl font-semibold text-white">
-                  volvox.pics
+                  volvox.works
                 </span>
                 <span className="text-2xl md:text-3xl text-gray-400 whitespace-nowrap">
                   /your-profile
@@ -126,21 +126,29 @@ export default function WaitlistPage() {
                 value={email}
                 disabled={status === "loading" || status === "success"}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full rounded-sm bg-zinc-900/50 px-4 py-3 text-white placeholder:text-zinc-600 ring-1 ring-white/10 focus:ring-white/40 outline-none disabled:opacity-50"
+                className={[
+                  "block w-full rounded-sm bg-zinc-900/50 px-4 py-3",
+                  "text-white placeholder:text-zinc-600",
+                  "ring-1 ring-white/10 focus:ring-white/40 outline-none disabled:opacity-50",
+                  // Autofill Fixes
+                  "[&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_rgb(24,24,27)]",
+                  "[&:-webkit-autofill]:[-webkit-text-fill-color:white]",
+                  "[&:-webkit-autofill]:caret-white",
+                ].join(" ")}
               />
 
               <button
                 type="submit"
                 disabled={status !== "idle" && status !== "error"}
                 className={`
-                  w-full rounded-sm py-3 text-sm font-semibold
-                  transition-all
-                  ${
-                    status === "success"
-                      ? "bg-zinc-800 text-green-500 cursor-default"
-                      : "bg-zinc-300 text-neutral-800 hover:bg-zinc-400"
-                  }
-                `}
+                w-full rounded-sm py-3 text-sm font-semibold
+                transition-all
+                ${
+                  status === "success"
+                    ? "bg-zinc-800 text-green-500 cursor-default"
+                    : "bg-zinc-300 text-neutral-800 hover:bg-zinc-400"
+                }
+              `}
               >
                 {status === "loading"
                   ? "Joining…"
