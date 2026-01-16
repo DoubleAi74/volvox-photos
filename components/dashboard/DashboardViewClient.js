@@ -233,7 +233,11 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
     const scrollToTarget = () => {
       if (hasScrolledRef.current) return;
       if (secondHeaderRef.current) {
-        secondHeaderRef.current.scrollIntoView({ behavior: "instant" });
+        // Use scrollTo with explicit offset calculation for better mobile support
+        const rect = secondHeaderRef.current.getBoundingClientRect();
+        const scrollMargin = window.innerWidth < 640 ? 45 : 80; // matches scroll-mt-[45px] sm:scroll-mt-[80px]
+        const targetY = window.scrollY + rect.top - scrollMargin;
+        window.scrollTo({ top: targetY, behavior: "instant" });
       }
       hasScrolledRef.current = true;
       setIsSynced(true);
@@ -243,13 +247,16 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
+      // Triple RAF for mobile browsers to ensure layout is stable
       requestAnimationFrame(() => {
-        requestAnimationFrame(scrollToTarget);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(scrollToTarget);
+        });
       });
     };
 
     waitForFontsAndPaint();
-  }, []);
+  }, [profileUser?.uid]);
 
   useEffect(() => {
     setEditOn(searchParams.has("edit"));

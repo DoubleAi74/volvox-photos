@@ -198,7 +198,11 @@ export default function PageViewClient({
     const scrollToTarget = () => {
       if (hasScrolledRef.current) return;
       if (topInfoRef.current) {
-        topInfoRef.current.scrollIntoView({ behavior: "instant" });
+        // Use scrollTo with explicit offset calculation for better mobile support
+        const rect = topInfoRef.current.getBoundingClientRect();
+        const scrollMargin = window.innerWidth < 640 ? 3 : 17; // matches scroll-mt-[3px] sm:scroll-mt-[17px]
+        const targetY = window.scrollY + rect.top - scrollMargin;
+        window.scrollTo({ top: targetY, behavior: "instant" });
       }
       hasScrolledRef.current = true;
       setIsSynced(true);
@@ -206,13 +210,16 @@ export default function PageViewClient({
 
     const waitForFontsAndPaint = async () => {
       if (document.fonts?.ready) await document.fonts.ready;
+      // Triple RAF + small delay for mobile browsers to ensure layout is stable
       requestAnimationFrame(() => {
-        requestAnimationFrame(scrollToTarget);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(scrollToTarget);
+        });
       });
     };
 
     waitForFontsAndPaint();
-  }, []);
+  }, [initialPage?.id, pageSlug]);
 
   const handleBackClick = () => {
     if (profileUser) {
