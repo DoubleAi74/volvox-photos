@@ -451,120 +451,6 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
     });
   };
 
-  // const handleEditPage = async (pageData) => {
-  //   if (!isOwner || !editingPage) return;
-
-  //   const targetId = editingPage.id;
-  //   setEditingPage(null);
-
-  //   const previousPages = [...pages];
-
-  //   const oldIndex = editingPage.order_index;
-  //   const newIndex = pageData.order_index;
-
-  //   setPages((currentPages) => {
-  //     // Update all affected pages' order indices (same logic as server)
-  //     const updatedList = currentPages.map((p) => {
-  //       if (p.id === targetId) {
-  //         // The edited page itself
-  //         return {
-  //           ...editingPage,
-  //           title: pageData.title,
-  //           description: pageData.description,
-  //           blurDataURL: pageData.blurDataURL || editingPage.blurDataURL,
-  //           order_index: newIndex,
-  //           isPrivate: pageData.isPrivate,
-  //           isPublic: pageData.isPublic,
-  //           isOptimistic: true,
-  //           isUploadingHeic: pageData.needsServerBlur && pageData.pendingFile,
-  //         };
-  //       }
-
-  //       // Adjust other pages' indices if order changed
-  //       if (oldIndex !== newIndex) {
-  //         if (oldIndex > newIndex) {
-  //           // Moving up: pages between newIndex and oldIndex shift down (+1)
-  //           if (p.order_index >= newIndex && p.order_index < oldIndex) {
-  //             return { ...p, order_index: p.order_index + 1 };
-  //           }
-  //         } else {
-  //           // Moving down: pages between oldIndex and newIndex shift up (-1)
-  //           if (p.order_index > oldIndex && p.order_index <= newIndex) {
-  //             return { ...p, order_index: p.order_index - 1 };
-  //           }
-  //         }
-  //       }
-
-  //       return p;
-  //     });
-
-  //     return updatedList.sort(
-  //       (a, b) => (a.order_index || 0) - (b.order_index || 0)
-  //     );
-  //   });
-
-  //   addToQueue({
-  //     actionFn: async () => {
-  //       let thumbnailUrl = pageData.thumbnail;
-  //       let blurDataURL = pageData.blurDataURL;
-
-  //       if (pageData.pendingFile) {
-  //         const securePath = `users/${currentUser.uid}/page-thumbnails`;
-  //         thumbnailUrl = await uploadFile(pageData.pendingFile, securePath);
-
-  //         if (pageData.needsServerBlur) {
-  //           blurDataURL = await fetchServerBlur(thumbnailUrl);
-  //         }
-
-  //         setPages((prev) =>
-  //           prev.map((p) =>
-  //             p.id === targetId
-  //               ? {
-  //                   ...p,
-  //                   thumbnail: thumbnailUrl,
-  //                   blurDataURL: blurDataURL || "",
-  //                   isUploadingHeic: false,
-  //                 }
-  //               : p
-  //           )
-  //         );
-  //       }
-
-  //       const { pendingFile, needsServerBlur, ...cleanPageData } = pageData;
-
-  //       await updatePage(
-  //         targetId,
-  //         {
-  //           ...cleanPageData,
-  //           thumbnail: thumbnailUrl,
-  //           blurDataURL: blurDataURL || "",
-  //         },
-  //         previousPages
-  //       );
-
-  //       // Clear optimistic flag after successful update and re-sort
-  //       setPages((prev) => {
-  //         const updated = prev.map((p) =>
-  //           p.id === targetId
-  //             ? {
-  //                 ...p,
-  //                 isOptimistic: false,
-  //                 isUploadingHeic: false,
-  //               }
-  //             : p
-  //         );
-  //         return updated.sort(
-  //           (a, b) => (a.order_index || 0) - (b.order_index || 0)
-  //         );
-  //       });
-  //     },
-  //     onRollback: () => {
-  //       setPages(previousPages);
-  //       alert("Failed to update page.");
-  //     },
-  //   });
-  // };
-
   const handleEditPage = async (pageData) => {
     if (!isOwner || !editingPage) return;
 
@@ -900,7 +786,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
         <div className={`${editOn ? "h-[12px]" : "h-[40px]"}`}></div>
 
-        <div className="p-3 md:p-6">
+        <div className="p-[8px] md:p-6">
           {loading || pages.length === 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
               {pages.length === 0 && !loading && !isOwner ? (
@@ -914,7 +800,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-[6px] md:gap-5">
               {pages
                 .filter((page) => {
                   if (page.isPrivate && !isOwner) {
@@ -961,7 +847,7 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
           >
             {/* Cleaned up: Removed the 'false &&' Dev Overlay block entirely */}
 
-            {false && (
+            {true && (
               <ActionButton
                 onClick={() => setDebugOverlay(!debugOverlay)}
                 active={debugOverlay}
@@ -1134,8 +1020,8 @@ function LoadingOverlay({
 
       <div className="h-[65px] sm:h-[100px]"></div>
 
-      <div className="p-3 md:p-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
+      <div className="p-[8px] md:p-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-[6px] md:gap-5">
           {Array.from({ length: Math.max(skeletonCount, 0) }).map((_, i) => (
             <PageSkeleton key={i} blurDataURL={previewBlurs[i] || ""} />
           ))}

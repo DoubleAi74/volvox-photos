@@ -89,8 +89,8 @@ export default function Loading() {
 
       <div className="h-[65px] sm:h-[100px]"></div>
       {hasOptimisticData && (
-        <div className="p-3 md:p-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
+        <div className="p-[8px] md:p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-[6px] md:gap-5">
             {Array.from({ length: Math.max(skeletonCount) }).map((_, i) => (
               <PageSkeleton
                 key={i}
