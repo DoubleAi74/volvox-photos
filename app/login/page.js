@@ -90,15 +90,6 @@ export default function LoginPage() {
     }
   };
 
-  // Loading Screen
-  if (loading && !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-500 border-t-white" />
-      </div>
-    );
-  }
-
   return (
     <div className="relative min-h-screen overflow-hidden font-sans text-white bg-black">
       {/* ----------------------------------
@@ -137,8 +128,8 @@ export default function LoginPage() {
             decoding="async"
             className="
             relative h-full w-full object-cover
-            opacity-0
-            motion-safe:animate-[fadeInBlur_1.5s_cubic-bezier(0.16,1,0.3,1)_forwards]
+            
+            motion-safe:animate-[fadeInBlur_1s]
           "
           />
         </picture>
@@ -163,7 +154,7 @@ export default function LoginPage() {
             {/* Header */}
             <div className="text-center">
               <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-                Volvox Works
+                Volvox Pictures
               </h1>
               <p className="mt-5 mb-6 text-zinc-300">
                 {isSigningUp
@@ -215,7 +206,7 @@ export default function LoginPage() {
                           </span>
                         ) : suggestedTag ? (
                           <span className="text-zinc-500">
-                            volvox.works/
+                            volvox.pics/
                             <span className="ml-1 font-semibold text-green-400">
                               {suggestedTag}
                             </span>

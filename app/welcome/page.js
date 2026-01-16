@@ -91,7 +91,7 @@ export default function WaitlistPage() {
             alt="Background"
             fetchPriority="high"
             decoding="async"
-            className="relative h-full w-full object-cover opacity-0 motion-safe:animate-[fadeInBlur_1.5s_cubic-bezier(0.16,1,0.3,1)_forwards]"
+            className="relative h-full w-full object-cover motion-safe:animate-[fadeInBlur_1s]"
           />
         </picture>
 
@@ -108,7 +108,7 @@ export default function WaitlistPage() {
             <div className="text-center">
               <h1 className="flex flex-wrap items-center justify-center gap-1">
                 <span className="text-3xl md:text-4xl font-semibold text-white">
-                  volvox.works
+                  volvox.pics
                 </span>
                 <span className="text-2xl md:text-3xl text-gray-400 whitespace-nowrap">
                   /your-profile

@@ -14,7 +14,7 @@ dialog::backdrop {
 @keyframes fadeInBlur {
   from {
     opacity: 0.3;
-    filter: blur(16px);
+    filter: blur(5px);
   }
   to {
     opacity: 1;
