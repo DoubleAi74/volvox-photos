@@ -171,52 +171,20 @@ export default function PageViewClient({
   }, [initialPage?.id]);
 
   const hasScrolledRef = useRef(false);
-
-  // useLayoutEffect(() => {
-  //   if (typeof window === "undefined") return;
-  //   if (hasScrolledRef.current) return;
-
-  //   if ("scrollRestoration" in window.history) {
-  //     window.history.scrollRestoration = "manual";
-  //   }
-
-  //   window.scrollTo(0, 0);
-
-  //   const scrollToTarget = () => {
-  //     if (hasScrolledRef.current) return;
-
-  //     if (topInfoRef.current) {
-  //       topInfoRef.current.scrollIntoView({ behavior: "instant" });
-  //     }
-  //     hasScrolledRef.current = true;
-  //     setIsSynced(true);
-  //   };
-
-  //   const waitForFontsAndPaint = async () => {
-  //     if (document.fonts?.ready) {
-  //       await document.fonts.ready;
-  //     }
-
-  //     requestAnimationFrame(() => {
-  //       requestAnimationFrame(scrollToTarget);
-  //     });
-  //   };
-
-  //   waitForFontsAndPaint();
-  // }, []);
+  const lastPageIdRef = useRef(null);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Determine if this is a fresh landing
-    const navigationEntry = performance.getEntriesByType("navigation")[0];
-    const isInitialLoad =
-      navigationEntry?.type === "navigate" ||
-      navigationEntry?.type === "reload";
+    // Reset scroll flag when navigating to a different page
+    const currentPageId = initialPage?.id || pageSlug;
+    if (lastPageIdRef.current !== currentPageId) {
+      hasScrolledRef.current = false;
+      lastPageIdRef.current = currentPageId;
+    }
 
-    // GUARD: If we've already scrolled or this is just a data refresh, EXIT
-    if (!isInitialLoad || hasScrolledRef.current) {
-      hasScrolledRef.current = true;
+    // GUARD: If we've already scrolled for this page, EXIT (prevents re-scroll on router.refresh())
+    if (hasScrolledRef.current) {
       setIsSynced(true);
       return;
     }

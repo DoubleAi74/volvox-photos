@@ -204,21 +204,21 @@ export default function DashboardViewClient({ profileUser, initialPages }) {
 
   const secondHeaderRef = useRef(null);
   const hasScrolledRef = useRef(false);
+  const lastUserIdRef = useRef(null);
   const scrollRestorePosRef = useRef(null);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 1. Determine if this is a "hard" load vs a "soft" data update
-    const navigationEntry = performance.getEntriesByType("navigation")[0];
-    const isInitialLoad =
-      navigationEntry?.type === "navigate" ||
-      navigationEntry?.type === "reload";
+    // Reset scroll flag when navigating to a different user's dashboard
+    const currentUserId = profileUser?.uid;
+    if (lastUserIdRef.current !== currentUserId) {
+      hasScrolledRef.current = false;
+      lastUserIdRef.current = currentUserId;
+    }
 
-    // 2. If it's not the first load OR we've already done the landing scroll, stop here.
-    // This prevents the scrollTo(0,0) from firing during a router.refresh()
-    if (!isInitialLoad || hasScrolledRef.current) {
-      hasScrolledRef.current = true;
+    // GUARD: If we've already scrolled for this dashboard, EXIT (prevents re-scroll on router.refresh())
+    if (hasScrolledRef.current) {
       setIsSynced(true);
       return;
     }
