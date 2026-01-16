@@ -36,49 +36,10 @@ export default function PhotoShowModal({
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
 
   /* ---------------------------------------------
-   * Sync <dialog> open/close with parent state
-   * ------------------------------------------- */
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (onOff) {
-      dialog.showModal();
-    } else if (dialog.hasAttribute("open")) {
-      dialog.close();
-    }
-  }, [onOff]);
-
-  /* ---------------------------------------------
-   * Keep React state in sync with native close
-   * ------------------------------------------- */
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleDialogClose = () => {
-      onClose();
-    };
-
-    dialog.addEventListener("close", handleDialogClose);
-    return () => dialog.removeEventListener("close", handleDialogClose);
-  }, [onClose]);
-
-  /* ---------------------------------------------
-   * Reset image fade when post changes
+   * Lock body scroll BEFORE dialog opens to prevent position flash on mobile
+   * Using useLayoutEffect ensures this runs synchronously before paint
    * ------------------------------------------- */
   useLayoutEffect(() => {
-    const img = imageRef.current;
-    if (!img) return;
-
-    const cached = img.complete;
-
-    setWasCached(cached);
-    setIsLoaded(cached);
-    setThumbnailLoaded(false);
-  }, [post?.id]);
-
-  useEffect(() => {
     if (onOff) {
       // 1. Save current scroll position
       const scrollY = window.scrollY;
@@ -126,6 +87,50 @@ export default function PhotoShowModal({
       }
     };
   }, [onOff]);
+
+  /* ---------------------------------------------
+   * Sync <dialog> open/close with parent state
+   * This runs AFTER the scroll lock is applied (useEffect runs after useLayoutEffect)
+   * ------------------------------------------- */
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (onOff) {
+      dialog.showModal();
+    } else if (dialog.hasAttribute("open")) {
+      dialog.close();
+    }
+  }, [onOff]);
+
+  /* ---------------------------------------------
+   * Keep React state in sync with native close
+   * ------------------------------------------- */
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const handleDialogClose = () => {
+      onClose();
+    };
+
+    dialog.addEventListener("close", handleDialogClose);
+    return () => dialog.removeEventListener("close", handleDialogClose);
+  }, [onClose]);
+
+  /* ---------------------------------------------
+   * Reset image fade when post changes
+   * ------------------------------------------- */
+  useLayoutEffect(() => {
+    const img = imageRef.current;
+    if (!img) return;
+
+    const cached = img.complete;
+
+    setWasCached(cached);
+    setIsLoaded(cached);
+    setThumbnailLoaded(false);
+  }, [post?.id]);
 
   /* ---------------------------------------------
    * Preload adjacent images using Cloudflare-optimized URLs
