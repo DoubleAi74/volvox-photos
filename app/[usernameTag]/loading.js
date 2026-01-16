@@ -33,7 +33,9 @@ const PageSkeleton = ({ blurDataURL }) => (
 export default function Loading() {
   const { themeState } = useTheme();
 
-  // Use optimistic data if available
+  // Check if we have optimistic data from navigating back (vs fresh page load)
+  const hasOptimisticData = !!themeState?.optimisticDashboardData?.uid;
+
   const skeletonCount = themeState?.optimisticDashboardData?.pageCount || 8;
   const pageBlurs = themeState?.optimisticDashboardData?.pageBlurs || [];
   const dashHex = themeState?.optimisticDashboardData?.dashHex || "#181818";
@@ -86,7 +88,7 @@ export default function Loading() {
       </div>
 
       <div className="h-[65px] sm:h-[100px]"></div>
-      {usernameTitle && (
+      {hasOptimisticData && (
         <div className="p-3 md:p-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-5">
             {Array.from({ length: Math.max(skeletonCount) }).map((_, i) => (

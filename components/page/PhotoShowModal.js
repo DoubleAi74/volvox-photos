@@ -232,7 +232,7 @@ export default function PhotoShowModal({
       >
         {post && (
           <div className="flex flex-col w-full h-full max-h-[80vh] bg-neutral-900 border border-neutral-800 text-neutral-100 rounded-lg overflow-hidden">
-            {/* HEADER (fixed, non-scrolling) */}
+            {/* HEADER  */}
             <div className="flex shrink-0 justify-between items-center px-2 py-2 border-b border-neutral-800 bg-neutral-900 z-10">
               <h2
                 className="
